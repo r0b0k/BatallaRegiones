@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Batalla de Regiones Pokémon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Chakra+Petch:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sans: 'Inter', sans-serif;
+      --font-display: 'Chakra Petch', sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: var(--font-sans);
+      background-color: #f1f5f9;
+      color: #0f172a;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-display {
+      font-family: var(--font-display);
+    }
+    #battle-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+      cursor: grab;
+    }
+    #battle-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Viñeta sutil cinematográfica para cámara lenta */
+    #dramatic-vignette {
+      background: radial-gradient(circle at center, transparent 60%, rgba(15, 23, 42, 0.34) 100%);
+      transition: opacity 0.45s ease;
+    }
+
+    /* Animación de pulso para la cuenta regresiva 5..4..3..2..1 */
+    @keyframes countdownPop {
+      0% { transform: scale(0.45); opacity: 0; }
+      35% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .countdown-pop {
+      animation: countdownPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Transición suave de izquierda a derecha para el Modal de Victoria */
+    #victory-overlay {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #victory-overlay.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #victory-card {
+      transform: translateX(-80px) scale(0.97);
+      opacity: 0;
+      transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s ease;
+    }
+    #victory-overlay.is-visible #victory-card {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+
+    /* Tarjetas del carrusel deslizante de izquierda a derecha */
+    .carousel-item {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s ease;
+      will-change: transform, opacity;
+    }
+
+    /* Patrón sutil estilo laboratorio/estadio Pokémon en pantalla inicial */
+    .stadium-light-pattern {
+      background-color: #f8fafc;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(244, 63, 94, 0.08) 0%, transparent 45%),
+        radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 22px 22px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-slate-100 text-slate-900">
+
+  <!-- ARENA DE COMBATE A PANTALLA COMPLETA -->
+  <div id="canvas-wrapper" class="relative w-screen h-screen overflow-hidden">
+    <canvas id="battle-canvas"></canvas>
+
+    <!-- VIÑETA CINEMATOGRÁFICA -->
+    <div id="dramatic-vignette" class="fixed inset-0 pointer-events-none opacity-0 z-10"></div>
+
+    <!-- INDICADOR FLOTANTE DE PAUSA (NO BLOQUEA EL ARRASTRE NI ZOOM DE LA CÁMARA) -->
+    <div id="pause-banner" class="hidden fixed top-36 inset-x-0 z-20 pointer-events-none flex justify-center px-4">
+      <div class="bg-amber-400/95 backdrop-blur-md border-2 border-amber-600 text-slate-950 font-display font-extrabold text-sm sm:text-base tracking-[0.22em] uppercase px-6 py-2 rounded-full shadow-[0_12px_30px_rgba(245,158,11,0.35)] flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-950 animate-pulse"></span>
+        <span>BATALLA EN PAUSA • CÁMARA LIBRE</span>
+      </div>
+    </div>
+
+    <!-- CONTADOR REGRESIVO DE 5 SEGUNDOS ANTES DE INICIAR -->
+    <div id="countdown-overlay" class="hidden fixed inset-0 z-30 pointer-events-none flex flex-col items-center justify-center bg-slate-950/15 backdrop-blur-[1px]">
+      <div class="bg-white/95 border-2 border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.28)] rounded-3xl px-10 py-7 text-center">
+        <div id="countdown-subtitle" class="font-display text-xs sm:text-sm font-extrabold uppercase tracking-[0.22em] text-slate-500 mb-1">
+          PREPARANDO ARENA
+        </div>
+        <div id="countdown-number" class="font-display text-6xl sm:text-8xl font-extrabold text-slate-900 leading-none tracking-tight countdown-pop">
+          5
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD SUPERIOR LUMINOSO Y MINIMALISTA EN COMBATE (IZQUIERDA VS DERECHA) -->
+    <header id="battle-hud" class="hidden fixed top-3 inset-x-0 z-30 px-3 sm:px-6 pointer-events-none">
+      <div class="max-w-3xl mx-auto bg-white/92 backdrop-blur-md border border-slate-200/90 rounded-2xl px-4 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.12)] pointer-events-auto">
+        <div class="flex items-center justify-between gap-3">
+          <!-- Equipo Izquierdo (Azul) -->
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <span class="w-3 h-3 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)] shrink-0"></span>
+            <div class="min-w-0">
+              <div id="hud-left-name" class="font-display font-extrabold text-xs sm:text-sm text-sky-700 uppercase truncate">KANTO</div>
+              <div class="text-[10px] text-slate-500 font-semibold">Izquierda →</div>
+            </div>
+            <div class="ml-auto flex items-baseline gap-0.5 shrink-0">
+              <span id="hud-left-count" class="font-display font-extrabold text-xl sm:text-2xl text-sky-600">0</span>
+              <span id="hud-left-total" class="text-[11px] text-slate-400 font-semibold">/0</span>
+            </div>
+          </div>
+
+          <!-- Reloj Central -->
+          <div class="flex flex-col items-center px-3 border-x border-slate-200 shrink-0">
+            <span class="font-display font-extrabold text-[10px] text-rose-500 tracking-widest">VS</span>
+            <span id="hud-timer" class="font-mono text-xs font-bold text-slate-800">00:00.0</span>
+          </div>
+
+          <!-- Equipo Derecho (Rojo) -->
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="mr-auto flex items-baseline gap-0.5 shrink-0">
+              <span id="hud-right-count" class="font-display font-extrabold text-xl sm:text-2xl text-rose-600">0</span>
+              <span id="hud-right-total" class="text-[11px] text-slate-400 font-semibold">/0</span>
+            </div>
+            <div class="min-w-0 text-right">
+              <div id="hud-right-name" class="font-display font-extrabold text-xs sm:text-sm text-rose-700 uppercase truncate">JOHTO</div>
+              <div class="text-[10px] text-slate-500 font-semibold">← Derecha</div>
+            </div>
+            <span class="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)] shrink-0"></span>
+          </div>
+        </div>
+
+        <!-- Barra de Equilibrio -->
+        <div class="mt-2 h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
+          <div id="bar-left" class="h-full bg-sky-500 transition-all duration-200" style="width: 50%"></div>
+          <div id="bar-right" class="h-full bg-rose-500 transition-all duration-200" style="width: 50%"></div>
+        </div>
+
+        <!-- Indicador de Velocidad y Controles Rápidos (Pausa, Sonido, Cambiar Regiones) -->
+        <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div id="pace-badge" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold">
+            <span id="pace-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span id="pace-label">VELOCIDAD NORMAL (1.0x)</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 ml-auto">
+            <button id="btn-pause-toggle" type="button" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold transition cursor-pointer flex items-center gap-1">
+              ⏸ Pausar
+            </button>
+            <button id="btn-hud-mute" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer" title="Activar/Silenciar Sonido">
+              🔊 Sonido
+            </button>
+            <button id="btn-abort-to-menu" type="button" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer">
+              Regiones
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTROLES FLOTANTES DE CÁMARA (+ ACERCAR, - ALEJAR, CENTRAR / AUTO-CÁMARA) -->
+    <div id="camera-controls" class="hidden fixed bottom-5 right-4 sm:right-6 z-30 flex flex-col items-end gap-2">
+      <div id="camera-mode-pill" class="px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-[10px] font-extrabold text-emerald-700 shadow-sm pointer-events-none">
+        🎯 Auto-cámara activa
+      </div>
+      <div class="flex items-center gap-1.5 bg-white/95 backdrop-blur-md border border-slate-200/90 p-1.5 rounded-2xl shadow-[0_10px_28px_rgba(15,23,42,0.16)]">
+        <button id="btn-zoom-in" type="button" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-display font-extrabold text-lg flex items-center justify-center transition cursor-pointer" title="Acercar Cámara (+)">
+          +
+        </button>
+        <button id="btn-zoom-out" type="button" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-display font-extrabold text-lg flex items-center justify-center transition cursor-pointer" title="Alejar Cámara (-)">
+          −
+        </button>
+        <button id="btn-camera-center" type="button" class="h-10 px-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white font-display font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-xs transition cursor-pointer" title="Volver a centrar y reactivar seguimiento automático">
+          <span>🎯</span>
+          <span>Centrar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PANTALLA INICIAL CLARA Y LUMINOSA (LIGHT MODE GAMER POKÉMON) -->
+    <div id="setup-overlay" class="fixed inset-0 z-40 stadium-light-pattern/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="w-full max-w-xl bg-white border border-slate-200/90 rounded-3xl shadow-[0_24px_60px_rgba(15,23,42,0.14)] overflow-hidden my-auto">
+        
+        <!-- Cabecera Estilo Liga Pokémon Moderna -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 via-white to-slate-50">
+          <div class="flex items-center gap-3">
+            <!-- Icono Pokébola nítido -->
+            <div class="w-10 h-10 rounded-full border-2 border-slate-800 relative overflow-hidden flex items-center justify-center shrink-0 bg-white shadow-sm">
+              <div class="absolute top-0 inset-x-0 h-1/2 bg-rose-500"></div>
+              <div class="w-full h-[2.5px] bg-slate-800 z-10"></div>
+              <div class="w-3.5 h-3.5 rounded-full bg-white border-2 border-slate-800 z-20"></div>
+            </div>
+            <div>
+              <h1 class="font-display text-lg sm:text-xl font-extrabold text-slate-900 tracking-wide uppercase leading-none">
+                Batalla de Regiones Pokémon
+              </h1>
+              <p class="text-[11px] text-slate-500 font-medium mt-1">
+                Estadio Oficial Izquierda vs Derecha • Doble PS • Cámara Táctil
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btn-setup-mute" type="button" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-sm flex items-center justify-center transition cursor-pointer" title="Activar/Silenciar Sonido">
+              🔊
+            </button>
+            <button id="btn-toggle-ranking" type="button" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-display font-extrabold tracking-wider uppercase transition cursor-pointer">
+              🏆 Top 10
+            </button>
+          </div>
+        </div>
+
+        <!-- Vista Principal: Selección de Regiones (Izquierda vs Derecha) -->
+        <div id="panel-region-select" class="p-6 space-y-5 bg-white">
+          <div class="grid grid-cols-1 sm:grid-cols-11 gap-3.5 items-center">
+            <!-- Región Izquierda -->
+            <div class="sm:col-span-5 bg-sky-50/75 border border-sky-200 rounded-2xl p-4">
+              <div class="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-sky-700 mb-2">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                  Región Izquierda
+                </span>
+                <span class="text-sky-600/80">Ataca →</span>
+              </div>
+              <select id="select-region-left" class="w-full bg-white border border-sky-200 focus:border-sky-500 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 shadow-xs focus:outline-none cursor-pointer">
+                <option value="0" selected>Kanto (151 Pokémon)</option>
+                <option value="1">Johto (100 Pokémon)</option>
+                <option value="2">Hoenn (135 Pokémon)</option>
+                <option value="3">Sinnoh (107 Pokémon)</option>
+                <option value="4">Unova / Teselia (156 Pokémon)</option>
+                <option value="5">Kalos (72 Pokémon)</option>
+                <option value="6">Alola (88 Pokémon)</option>
+                <option value="7">Galar (96 Pokémon)</option>
+                <option value="8">Paldea (120 Pokémon)</option>
+              </select>
+            </div>
+
+            <!-- VS -->
+            <div class="sm:col-span-1 flex items-center justify-center">
+              <span class="font-display font-extrabold text-xs text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full shadow-2xs">
+                VS
+              </span>
+            </div>
+
+            <!-- Región Derecha -->
+            <div class="sm:col-span-5 bg-rose-50/75 border border-rose-200 rounded-2xl p-4">
+              <div class="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-rose-700 mb-2">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  Región Derecha
+                </span>
+                <span class="text-rose-600/80">← Ataca</span>
+              </div>
+              <select id="select-region-right" class="w-full bg-white border border-rose-200 focus:border-rose-500 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 shadow-xs focus:outline-none cursor-pointer">
+                <option value="0">Kanto (151 Pokémon)</option>
+                <option value="1" selected>Johto (100 Pokémon)</option>
+                <option value="2">Hoenn (135 Pokémon)</option>
+                <option value="3">Sinnoh (107 Pokémon)</option>
+                <option value="4">Unova / Teselia (156 Pokémon)</option>
+                <option value="5">Kalos (72 Pokémon)</option>
+                <option value="6">Alola (88 Pokémon)</option>
+                <option value="7">Galar (96 Pokémon)</option>
+                <option value="8">Paldea (120 Pokémon)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Aviso de región repetida -->
+          <div id="same-region-warning" class="hidden text-center text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl py-2 px-3">
+            Selecciona dos regiones diferentes para iniciar el duelo.
+          </div>
+
+          <!-- Barra de Carga PokéAPI -->
+          <div id="loading-container" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span id="loading-status" class="text-slate-700">Sincronizando Pokédex oficial...</span>
+              <span id="loading-percent" class="font-mono text-sky-600">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+              <div id="loading-bar" class="h-full bg-gradient-to-r from-sky-500 to-rose-500 transition-all duration-150" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Botón Principal Vibrante -->
+          <button id="btn-start-battle" type="button" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-red-500 to-rose-600 hover:from-rose-600 hover:to-red-600 text-white font-display font-extrabold text-base tracking-wider uppercase shadow-[0_10px_24px_rgba(244,63,94,0.3)] transition transform active:scale-[0.99] cursor-pointer">
+            INICIAR BATALLA
+          </button>
+        </div>
+
+        <!-- Panel Secundario: Ranking Top 10 Mejores Tiempos -->
+        <div id="panel-ranking" class="hidden p-6 space-y-4 bg-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display text-base font-extrabold text-slate-900 uppercase tracking-wide">
+                🏆 Ranking Top 10 • Mejores Tiempos
+              </h2>
+              <p class="text-[11px] text-slate-500 font-medium">Ordenado por la victoria más rápida registrada</p>
+            </div>
+            <button id="btn-back-to-select" type="button" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition cursor-pointer">
+              ← Volver
+            </button>
+          </div>
+
+          <div id="ranking-list" class="space-y-1.5 max-h-72 overflow-y-auto pr-1"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODAL DE VICTORIA CLARO CON CARRUSEL IZQUIERDA -> DERECHA (SOLO CON BAJAS) Y CONFETI TOP 3 -->
+    <div id="victory-overlay" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div id="victory-card" class="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-[0_28px_70px_rgba(15,23,42,0.28)] overflow-hidden">
+        
+        <!-- Canvas de Confeti exclusivo para el Top 3 de eliminaciones -->
+        <canvas id="confetti-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-20"></canvas>
+
+        <!-- Encabezado de Victoria -->
+        <div class="relative z-10 px-6 pt-6 pb-4 border-b border-slate-100 text-center bg-gradient-to-b from-slate-50 to-white">
+          <span id="victory-record-badge" class="inline-block px-3 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[11px] font-extrabold uppercase tracking-widest mb-1.5">
+            CAMPEÓN DE LA ARENA
+          </span>
+          <h2 id="victory-title" class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 uppercase tracking-wide">
+            ¡KANTO GANA LA BATALLA!
+          </h2>
+          <p id="victory-subtitle" class="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            vs Johto • Tiempo: 01:12.4 • 14 sobrevivientes
+          </p>
+        </div>
+
+        <!-- Escenario del Carrusel (Desplazamiento suave de Izquierda a Derecha) -->
+        <div class="relative z-10 px-4 py-5 bg-slate-50/60">
+          <div class="text-center mb-2">
+            <span id="carousel-status-pill" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-700 shadow-2xs">
+              Héroes con Eliminaciones
+            </span>
+          </div>
+
+          <!-- Pista visual del carrusel -->
+          <div id="carousel-stage" class="relative w-full h-56 sm:h-60 overflow-hidden flex items-center justify-center">
+            <div class="w-44 h-48 sm:w-48 sm:h-52 rounded-2xl border-2 border-slate-200/80 bg-white/70 pointer-events-none"></div>
+            <div id="carousel-track" class="absolute inset-0 pointer-events-none"></div>
+          </div>
+
+          <!-- Controles discretos del carrusel -->
+          <div class="mt-2 flex items-center justify-center gap-3">
+            <button id="btn-carousel-prev" type="button" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold shadow-2xs transition cursor-pointer" title="Anterior">
+              ‹
+            </button>
+            <span id="carousel-counter" class="font-mono text-xs font-bold text-slate-500">1 / 1</span>
+            <button id="btn-carousel-next" type="button" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold shadow-2xs transition cursor-pointer" title="Siguiente">
+              ›
+            </button>
+          </div>
+        </div>
+
+        <!-- Acciones Finales -->
+        <div class="relative z-10 px-6 pb-6 pt-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+          <button id="btn-victory-ranking" type="button" class="py-3 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-display font-extrabold text-xs sm:text-sm uppercase tracking-wider transition cursor-pointer">
+            🏆 Ver Ranking Top 10
+          </button>
+          <button id="btn-rematch" type="button" class="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-display font-extrabold text-xs sm:text-sm uppercase tracking-wider transition cursor-pointer">
+            🔄 Revancha
+          </button>
+          <button id="btn-new-regions" type="button" class="flex-1 py-3 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-display font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-sm transition cursor-pointer">
+            🌍 Nuevas Regiones
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * BATALLA DE REGIONES POKÉMON — EDICIÓN ESTADIO HORIZONTAL & CÁMARA TÁCTIL
+     * - Orientación horizontal de Izquierda (Azul) a Derecha (Rojo) con sprites frontales
+     * - Cámara interactiva libre: arrastre con mouse / 1 dedo, rueda del ratón,
+     *   pinch-to-zoom con 2 dedos y botones flotantes (+, -, Centrar)
+     * - Botón de Pausa / Reanudar que congela la simulación manteniendo cámara libre
+     * - Web Audio API sintetizado, cuenta regresiva de 5s, doble PS, hitbox sólido,
+     *   ritmo sin aceleración (1.0x -> 0.75x -> 0.5x -> 0.28x -> 0.20x),
+     *   Ranking Top 10 y carrusel final filtrado por bajas con confeti Top 3
+     * ============================================================================
+     */
+
+    const REGIONS = [
+      { id: 'kanto',  name: 'Kanto',           start: 1,   end: 151, count: 151 },
+      { id: 'johto',  name: 'Johto',           start: 152, end: 251, count: 100 },
+      { id: 'hoenn',  name: 'Hoenn',           start: 252, end: 386, count: 135 },
+      { id: 'sinnoh', name: 'Sinnoh',          start: 387, end: 493, count: 107 },
+      { id: 'unova',  name: 'Unova / Teselia', start: 494, end: 649, count: 156 },
+      { id: 'kalos',  name: 'Kalos',           start: 650, end: 721, count: 72 },
+      { id: 'alola',  name: 'Alola',           start: 722, end: 809, count: 88 },
+      { id: 'galar',  name: 'Galar',           start: 810, end: 905, count: 96 },
+      { id: 'paldea', name: 'Paldea',          start: 906, end: 1025, count: 120 }
+    ];
+
+    const TYPE_CHART = {
+      normal:   { rock: 0.5, ghost: 0, steel: 0.5 },
+      fire:     { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+      water:    { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+      electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+      grass:    { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+      ice:      { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+      fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+      poison:   { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+      ground:   { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+      flying:   { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+      psychic:  { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+      bug:      { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+      rock:     { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+      ghost:    { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+      dragon:   { dragon: 2, steel: 0.5, fairy: 0 },
+      dark:     { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+      steel:    { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+      fairy:    { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 }
+    };
+
+    const TYPE_COLORS = {
+      normal: '#94a3b8', fire: '#f97316', water: '#0ea5e9', electric: '#eab308',
+      grass: '#22c55e', ice: '#06b6d4', fighting: '#ef4444', poison: '#a855f7',
+      ground: '#d97706', flying: '#60a5fa', psychic: '#ec4899', bug: '#84cc16',
+      rock: '#ca8a04', ghost: '#6366f1', dragon: '#4f46e5', dark: '#475569',
+      steel: '#64748b', fairy: '#f472b6'
+    };
+
+    function getTypeEffectiveness(atkType, defTypes) {
+      let mult = 1;
+      const chart = TYPE_CHART[atkType] || {};
+      for (const dt of defTypes) {
+        if (chart[dt] !== undefined) mult *= chart[dt];
+      }
+      return mult;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 1. MOTOR DE AUDIO SINTETIZADO (WEB AUDIO API) CON CONTROL DE MUTE/UNMUTE
+    // ----------------------------------------------------------------------------
+    class BattleAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.lastAttackSoundTime = 0;
+        this.lastKoSoundTime = 0;
+      }
+
+      unlock() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        if (!this.muted) this.unlock();
+        return this.muted;
+      }
+
+      playPauseClick(paused) {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(paused ? 520 : 680, now);
+        osc.frequency.exponentialRampToValueAtTime(paused ? 380 : 880, now + 0.08);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+
+      playCountdownBeep(step) {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        if (step > 0) {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.exponentialRampToValueAtTime(580, now + 0.14);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.17);
+        } else {
+          const freqs = [523.25, 659.25, 783.99, 1046.5];
+          freqs.forEach((f, idx) => {
+            const o = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            o.type = 'sawtooth';
+            o.frequency.setValueAtTime(f, now + idx * 0.03);
+            g.gain.setValueAtTime(0.08, now + idx * 0.03);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+            o.connect(g);
+            g.connect(this.ctx.destination);
+            o.start(now + idx * 0.03);
+            o.stop(now + 0.5);
+          });
+        }
+      }
+
+      playAttackSound(type, isRanged, isCrit) {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastAttackSoundTime < 0.048) return;
+        this.lastAttackSoundTime = now;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const baseGain = isCrit ? 0.095 : 0.055;
+
+        if (type === 'electric') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(1180, now);
+          osc.frequency.exponentialRampToValueAtTime(240, now + 0.09);
+        } else if (type === 'fire' || type === 'dragon') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.exponentialRampToValueAtTime(95, now + 0.13);
+        } else if (type === 'water' || type === 'ice') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(760, now);
+          osc.frequency.exponentialRampToValueAtTime(340, now + 0.11);
+        } else if (type === 'grass' || type === 'bug') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(620, now);
+          osc.frequency.exponentialRampToValueAtTime(290, now + 0.09);
+        } else if (type === 'psychic' || type === 'ghost' || type === 'fairy') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.11);
+        } else if (isRanged) {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(540, now);
+          osc.frequency.exponentialRampToValueAtTime(210, now + 0.1);
+        } else {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(190, now);
+          osc.frequency.exponentialRampToValueAtTime(58, now + 0.08);
+        }
+
+        gain.gain.setValueAtTime(baseGain, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      }
+
+      playKOSound() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (now - this.lastKoSoundTime < 0.07) return;
+        this.lastKoSoundTime = now;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(330, now);
+        osc.frequency.exponentialRampToValueAtTime(72, now + 0.28);
+
+        gain.gain.setValueAtTime(0.11, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.31);
+      }
+
+      playVictoryFanfare() {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const notes = [
+          { f: 523.25, t: 0.00, d: 0.12 },
+          { f: 523.25, t: 0.13, d: 0.12 },
+          { f: 523.25, t: 0.26, d: 0.12 },
+          { f: 659.25, t: 0.40, d: 0.24 },
+          { f: 587.33, t: 0.66, d: 0.18 },
+          { f: 659.25, t: 0.86, d: 0.18 },
+          { f: 783.99, t: 1.06, d: 0.55 }
+        ];
+
+        notes.forEach(n => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(0.13, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.02);
+        });
+      }
+
+      playConfettiPop() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freqs = [880, 1174.66, 1567.98];
+        freqs.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.03);
+          gain.gain.setValueAtTime(0.06, now + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.03);
+          osc.stop(now + 0.24);
+        });
+      }
+    }
+
+    const sfx = new BattleAudioEngine();
+
+    // ----------------------------------------------------------------------------
+    // 2. RANKING TOP 10 (LOCALSTORAGE) ORDENADO POR MEJOR TIEMPO
+    // ----------------------------------------------------------------------------
+    const RANKING_STORAGE_KEY = 'pokemon_region_battle_top10_horiz_v1';
+
+    function getRankingRecords() {
+      try {
+        const raw = localStorage.getItem(RANKING_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function formatBattleTime(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+      const tenths = Math.floor((seconds % 1) * 10);
+      return `${mins}:${secs}.${tenths}`;
+    }
+
+    function saveBattleRecord(winnerName, rivalName, durationSec, survivorsCount) {
+      const records = getRankingRecords();
+      const newEntry = {
+        id: Date.now() + Math.random(),
+        winner: winnerName,
+        rival: rivalName,
+        time: Number(durationSec.toFixed(2)),
+        survivors: survivorsCount,
+        date: new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' })
+      };
+      records.push(newEntry);
+      records.sort((a, b) => a.time - b.time);
+      const top10 = records.slice(0, 10);
+      try {
+        localStorage.setItem(RANKING_STORAGE_KEY, JSON.stringify(top10));
+      } catch (e) {}
+      const rankIndex = top10.findIndex(r => r.id === newEntry.id);
+      return { rank: rankIndex >= 0 ? rankIndex + 1 : null, top10 };
+    }
+
+    function renderRankingList() {
+      const listEl = document.getElementById('ranking-list');
+      const records = getRankingRecords();
+      if (records.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl">
+            Aún no hay batallas registradas. ¡Inicia un combate para marcar el primer récord!
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = records.map((rec, idx) => {
+        const pos = idx + 1;
+        const medal = pos === 1 ? '🥇' : (pos === 2 ? '🥈' : (pos === 3 ? '🥉' : `#${pos}`));
+        const rowStyle = pos === 1
+          ? 'bg-amber-50 border-amber-300'
+          : 'bg-slate-50 border-slate-200';
+        return `
+          <div class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border ${rowStyle}">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="font-display font-extrabold text-xs w-6 text-center ${pos <= 3 ? 'text-amber-700' : 'text-slate-500'}">${medal}</span>
+              <div class="min-w-0">
+                <div class="text-xs sm:text-sm font-extrabold text-slate-900 truncate">
+                  ${rec.winner} <span class="text-slate-500 font-semibold">vs ${rec.rival}</span>
+                </div>
+                <div class="text-[10px] font-medium text-slate-500">
+                  ${rec.survivors} sobrevivientes • ${rec.date || ''}
+                </div>
+              </div>
+            </div>
+            <div class="font-mono text-xs sm:text-sm font-extrabold text-sky-600 shrink-0">
+              ${formatBattleTime(rec.time)}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. CACHÉ DE POKÉAPI Y SPRITES FRONTALES OFICIALES
+    // ----------------------------------------------------------------------------
+    const pokemonCache = new Map();
+    const spriteCache = new Map();
+
+    function getFrontSpriteImage(id, frontUrl) {
+      const key = `${id}-front`;
+      if (spriteCache.has(key)) return spriteCache.get(key);
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.loaded = false;
+      img.failed = false;
+
+      const officialFront = frontUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+      const artworkFallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+
+      img.onload = () => { img.loaded = true; };
+      img.onerror = () => {
+        if (img.src !== artworkFallback) {
+          img.src = artworkFallback;
+        } else {
+          img.failed = true;
+        }
+      };
+      img.src = officialFront;
+      spriteCache.set(key, img);
+      return img;
+    }
+
+    function generateFallbackPokemon(id) {
+      const typesList = Object.keys(TYPE_COLORS);
+      const t1 = typesList[id % typesList.length];
+      const t2 = (id % 3 === 0) ? typesList[(id * 7) % typesList.length] : null;
+      const base = 70 + (id % 38);
+      return {
+        id,
+        name: `Pokémon #${id}`,
+        types: t2 && t2 !== t1 ? [t1, t2] : [t1],
+        frontUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
+        stats: {
+          hp: base + 12,
+          attack: base + (id % 22),
+          defense: base,
+          spAttack: base + ((id * 3) % 22),
+          spDefense: base,
+          speed: 55 + (id % 65)
+        }
+      };
+    }
+
+    async function fetchPokemonData(id) {
+      if (pokemonCache.has(id)) return pokemonCache.get(id);
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4500);
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        const statsMap = {};
+        for (const s of data.stats) {
+          statsMap[s.stat.name] = s.base_stat;
+        }
+
+        const formattedName = data.name
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+
+        const frontUrl =
+          (data.sprites && data.sprites.front_default) ||
+          `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+        const poke = {
+          id: data.id,
+          name: formattedName,
+          types: data.types.sort((a, b) => a.slot - b.slot).map(t => t.type.name),
+          frontUrl,
+          stats: {
+            hp: statsMap['hp'] || 70,
+            attack: statsMap['attack'] || 70,
+            defense: statsMap['defense'] || 70,
+            spAttack: statsMap['special-attack'] || 70,
+            spDefense: statsMap['special-defense'] || 70,
+            speed: statsMap['speed'] || 70
+          }
+        };
+        pokemonCache.set(id, poke);
+        return poke;
+      } catch (err) {
+        const fallback = generateFallbackPokemon(id);
+        pokemonCache.set(id, fallback);
+        return fallback;
+      }
+    }
+
+    async function loadRegionRoster(region, onProgress) {
+      const ids = [];
+      for (let i = region.start; i <= region.end; i++) ids.push(i);
+
+      const roster = [];
+      const batchSize = 45;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const results = await Promise.all(batch.map(id => fetchPokemonData(id)));
+        roster.push(...results);
+        onProgress(Math.min(ids.length, i + batch.length), ids.length);
+      }
+      return roster;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. CONFIGURACIÓN DEL ESTADIO HORIZONTAL (IZQUIERDA VS DERECHA) Y ESTADO
+    // ----------------------------------------------------------------------------
+    const canvas = document.getElementById('battle-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Arena panorámica horizontal con perspectiva 2.5D sutil
+    const ARENA = {
+      width: 2150,
+      height: 1120,
+      horizonY: 95,
+      groundHeight: 920,
+      topWidthFactor: 0.84,
+      bottomWidthFactor: 1.0
+    };
+
+    const ZOOM_LIMITS = {
+      min: 0.32,
+      max: 2.35
+    };
+
+    const state = {
+      status: 'setup', // 'setup' | 'loading' | 'countdown' | 'running' | 'ended'
+      paused: false,
+      countdownRemaining: 5,
+      lastCountdownInt: 5,
+      currentTimeScale: 1.0, // Siempre inicia en 1.0x (nunca acelera)
+      pacePhase: 'normal',   // 'normal' | 'slowing' | 'slowmo_50' | 'slowmo_final'
+      elapsedTime: 0,
+      lastFrameTime: 0,
+      leftRegion: REGIONS[0],
+      rightRegion: REGIONS[1],
+      fighters: [],
+      projectiles: [],
+      particles: [],
+      shockwaves: [],
+      camera: {
+        x: ARENA.width / 2,
+        y: ARENA.horizonY + ARENA.groundHeight * 0.5,
+        zoom: 0.58,
+        targetX: ARENA.width / 2,
+        targetY: ARENA.horizonY + ARENA.groundHeight * 0.5,
+        targetZoom: 0.58,
+        manualOverride: false,
+        focusSwitchTimer: 0,
+        focusGroupIndex: 0
+      }
+    };
+
+    function toScreen(x, y) {
+      const t = Math.max(0, Math.min(1, y / ARENA.height));
+      const depthT = Math.pow(t, 1.02);
+      const widthScale = ARENA.topWidthFactor + (ARENA.bottomWidthFactor - ARENA.topWidthFactor) * depthT;
+      const depthScale = 0.86 + 0.28 * depthT;
+
+      const centerX = ARENA.width / 2;
+      const sx = centerX + (x - centerX) * widthScale;
+      const sy = ARENA.horizonY + depthT * ARENA.groundHeight;
+
+      return { sx, sy, depthScale, widthScale };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 5. CLASE COMBATIENTE POKÉMON (IZQUIERDA -> DERECHA / DERECHA -> IZQUIERDA)
+    // ----------------------------------------------------------------------------
+    class PokemonFighter {
+      constructor(data, team, spawnX, spawnY) {
+        this.uid = `${team}-${data.id}-${Math.random().toString(36).slice(2, 7)}`;
+        this.id = data.id;
+        this.name = data.name;
+        this.types = data.types;
+        this.primaryType = data.types[0] || 'normal';
+        this.stats = data.stats;
+        this.team = team; // 'left' (Azul -> Derecha) | 'right' (Rojo -> Izquierda)
+
+        this.x = spawnX;
+        this.y = spawnY;
+
+        // Doble de vida (PS x2)
+        this.maxHp = Math.round((135 + this.stats.hp * 2.8) * 2);
+        this.hp = this.maxHp;
+        this.alive = true;
+        this.faintProgress = 0;
+
+        this.moveSpeed = 72 + (this.stats.speed * 0.74);
+        this.attackCooldownMax = Math.max(0.55, 1.85 - (this.stats.speed / 135));
+        this.attackCooldown = Math.random() * this.attackCooldownMax;
+
+        const bst = this.stats.hp + this.stats.attack + this.stats.defense +
+                    this.stats.spAttack + this.stats.spDefense + this.stats.speed;
+        this.bst = bst;
+        this.scale = bst >= 580 ? 1.38 : (bst >= 480 ? 1.22 : 1.08);
+
+        // Hitbox sólido para evitar superposiciones
+        this.hitboxRadius = Math.round(28 * this.scale);
+
+        const isRangedType = ['fire', 'water', 'electric', 'grass', 'ice', 'psychic', 'ghost', 'dragon', 'fairy'].includes(this.primaryType);
+        const prefersSpecial = this.stats.spAttack >= this.stats.attack;
+        this.isRanged = prefersSpecial || isRangedType;
+        this.attackRange = this.isRanged ? (210 + Math.random() * 45) : (this.hitboxRadius * 2 + 18);
+
+        this.target = null;
+        this.retargetTimer = Math.random() * 0.35;
+        this.hopPhase = Math.random() * Math.PI * 2;
+        this.lungeOffset = { x: 0, y: 0 };
+        // Orientación inicial: equipo izquierdo mira hacia derecha (+1), equipo derecho hacia izquierda (-1)
+        this.facingDir = team === 'left' ? 1 : -1;
+        this.kills = 0;
+        this.damageDealt = 0;
+
+        this.sprite = getFrontSpriteImage(this.id, data.frontUrl);
+      }
+
+      findNearestEnemy(allFighters) {
+        let best = null;
+        let bestDistSq = Infinity;
+        for (let i = 0; i < allFighters.length; i++) {
+          const other = allFighters[i];
+          if (!other.alive || other.team === this.team) continue;
+          const dx = other.x - this.x;
+          const dy = other.y - this.y;
+          const dSq = dx * dx + dy * dy;
+          if (dSq < bestDistSq) {
+            bestDistSq = dSq;
+            best = other;
+          }
+        }
+        return best;
+      }
+
+      update(dt, allFighters) {
+        if (!this.alive) {
+          if (this.faintProgress < 1) {
+            this.faintProgress = Math.min(1, this.faintProgress + dt * 2.5);
+          }
+          return;
+        }
+
+        this.lungeOffset.x *= Math.pow(0.05, dt);
+        this.lungeOffset.y *= Math.pow(0.05, dt);
+        this.attackCooldown = Math.max(0, this.attackCooldown - dt);
+        this.retargetTimer -= dt;
+
+        if (!this.target || !this.target.alive || this.retargetTimer <= 0) {
+          this.target = this.findNearestEnemy(allFighters);
+          this.retargetTimer = 0.32 + Math.random() * 0.25;
+        }
+
+        if (!this.target) return;
+
+        const dx = this.target.x - this.x;
+        const dy = this.target.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        if (Math.abs(dx) > 6) {
+          this.facingDir = dx >= 0 ? 1 : -1;
+        }
+
+        const minCombatStopDist = this.hitboxRadius + this.target.hitboxRadius + 8;
+        const effectiveStopRange = Math.max(this.attackRange, minCombatStopDist);
+
+        if (dist > effectiveStopRange) {
+          const dirX = dx / dist;
+          const dirY = dy / dist;
+
+          // Flanqueo suave para rodear aliados sin atascarse
+          let steerX = 0;
+          let steerY = 0;
+          for (let i = 0; i < allFighters.length; i++) {
+            const other = allFighters[i];
+            if (other === this || !other.alive) continue;
+            const odx = this.x - other.x;
+            const ody = this.y - other.y;
+            const minComfort = (this.hitboxRadius + other.hitboxRadius) * 1.25;
+            const odSq = odx * odx + ody * ody;
+            if (odSq > 0.1 && odSq < minComfort * minComfort) {
+              const od = Math.sqrt(odSq);
+              const push = (minComfort - od) / minComfort;
+              steerX += (odx / od) * push * 52;
+              steerY += (ody / od) * push * 52;
+            }
+          }
+
+          this.x += (dirX * this.moveSpeed + steerX) * dt;
+          this.y += (dirY * this.moveSpeed + steerY) * dt;
+          this.hopPhase += dt * (9 + this.stats.speed * 0.05);
+        } else {
+          this.hopPhase += dt * 3.5;
+          if (this.attackCooldown <= 0) {
+            this.performAttack(this.target);
+            this.attackCooldown = this.attackCooldownMax * (0.9 + Math.random() * 0.2);
+          }
+        }
+      }
+
+      performAttack(target) {
+        const useSpecial = this.stats.spAttack > this.stats.attack;
+        const atkStat = useSpecial ? this.stats.spAttack : this.stats.attack;
+        const defStat = useSpecial ? target.stats.spDefense : target.stats.defense;
+
+        let chosenType = this.primaryType;
+        let effectiveness = getTypeEffectiveness(chosenType, target.types);
+        if (this.types.length > 1) {
+          const eff2 = getTypeEffectiveness(this.types[1], target.types);
+          if (eff2 > effectiveness) {
+            chosenType = this.types[1];
+            effectiveness = eff2;
+          }
+        }
+
+        const finalEff = effectiveness === 0 ? 0.2 : effectiveness;
+        const stab = 1.5;
+        const isCrit = Math.random() < (0.0625 + this.stats.speed / 1600);
+        const critMult = isCrit ? 1.5 : 1.0;
+        const randomVar = 0.85 + Math.random() * 0.15;
+
+        const basePower = 50;
+        const rawDamage = (((22 * basePower * (atkStat / Math.max(25, defStat))) / 45) + 7)
+                          * stab * finalEff * critMult * randomVar;
+        const damage = Math.max(5, Math.round(rawDamage));
+
+        const dx = target.x - this.x;
+        const dy = target.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        this.lungeOffset.x = (dx / dist) * (this.isRanged ? 7 : 16);
+        this.lungeOffset.y = (dy / dist) * (this.isRanged ? 7 : 16);
+
+        sfx.playAttackSound(chosenType, this.isRanged, isCrit);
+
+        if (this.isRanged) {
+          state.projectiles.push({
+            attacker: this,
+            target: target,
+            x: this.x,
+            y: this.y - 12,
+            type: chosenType,
+            damage,
+            isCrit,
+            speed: 520 + this.stats.speed * 1.45,
+            trail: []
+          });
+        } else {
+          spawnMeleeEffect(target, chosenType);
+          applyDamageToTarget(this, target, damage, isCrit, chosenType);
+        }
+      }
+    }
+
+    /**
+     * RESOLUCIÓN DE COLISIONES CON HITBOX SÓLIDO ENTRE POKÉMON
+     */
+    function resolveHitboxCollisions(fighters) {
+      const count = fighters.length;
+      const iterations = 2;
+      const pad = 48;
+
+      for (let iter = 0; iter < iterations; iter++) {
+        for (let i = 0; i < count; i++) {
+          const a = fighters[i];
+          if (!a.alive) continue;
+
+          for (let j = i + 1; j < count; j++) {
+            const b = fighters[j];
+            if (!b.alive) continue;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const minDist = a.hitboxRadius + b.hitboxRadius;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < minDist * minDist) {
+              let dist = Math.sqrt(distSq);
+              let nx = 0;
+              let ny = 0;
+
+              if (dist < 0.001) {
+                const angle = (i * 1.7 + j * 2.3) % (Math.PI * 2);
+                nx = Math.cos(angle);
+                ny = Math.sin(angle);
+                dist = 0.001;
+              } else {
+                nx = dx / dist;
+                ny = dy / dist;
+              }
+
+              const overlap = (minDist - dist) * 0.52;
+              a.x -= nx * overlap;
+              a.y -= ny * overlap;
+              b.x += nx * overlap;
+              b.y += ny * overlap;
+            }
+          }
+
+          a.x = Math.max(pad, Math.min(ARENA.width - pad, a.x));
+          a.y = Math.max(pad, Math.min(ARENA.height - pad, a.y));
+        }
+      }
+    }
+
+    function applyDamageToTarget(attacker, target, damage, isCrit, atkType) {
+      if (!target.alive) return;
+
+      target.hp = Math.max(0, target.hp - damage);
+      attacker.damageDealt += damage;
+
+      const dx = target.x - attacker.x;
+      const dy = target.y - attacker.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      target.lungeOffset.x += (dx / dist) * (isCrit ? 12 : 6);
+      target.lungeOffset.y += (dy / dist) * (isCrit ? 12 : 6);
+
+      spawnImpactParticles(target.x, target.y - 14, atkType, isCrit ? 14 : 8);
+
+      if (target.hp <= 0 && target.alive) {
+        target.alive = false;
+        attacker.kills += 1;
+        sfx.playKOSound();
+
+        state.shockwaves.push({
+          x: target.x,
+          y: target.y,
+          radius: 8,
+          maxRadius: 68,
+          color: TYPE_COLORS[atkType] || '#0ea5e9',
+          life: 0.42,
+          maxLife: 0.42
+        });
+      }
+    }
+
+    function spawnMeleeEffect(target, type) {
+      const color = TYPE_COLORS[type] || '#eab308';
+      state.shockwaves.push({
+        x: target.x,
+        y: target.y - 10,
+        radius: 4,
+        maxRadius: 34,
+        color,
+        life: 0.24,
+        maxLife: 0.24
+      });
+    }
+
+    function spawnImpactParticles(x, y, type, count) {
+      if (state.particles.length > 420) return;
+      const baseColor = TYPE_COLORS[type] || '#0ea5e9';
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 45 + Math.random() * 140;
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 28,
+          size: 3 + Math.random() * 4,
+          color: i % 3 === 0 ? '#facc15' : baseColor,
+          life: 0.32 + Math.random() * 0.24,
+          maxLife: 0.56
+        });
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. RENDERIZADO DEL ESTADIO HORIZONTAL LUMINOSO (IZQUIERDA VS DERECHA)
+    // ----------------------------------------------------------------------------
+    function drawStadiumBackground() {
+      const w = ARENA.width;
+      const topY = ARENA.horizonY;
+      const botY = ARENA.horizonY + ARENA.groundHeight;
+
+      const topLeft = toScreen(0, 0);
+      const topRight = toScreen(w, 0);
+      const botLeft = toScreen(0, ARENA.height);
+      const botRight = toScreen(w, ARENA.height);
+
+      // Fondo luminoso tipo estadio diurno de Liga Pokémon
+      const skyGrad = ctx.createLinearGradient(0, -450, 0, botY + 450);
+      skyGrad.addColorStop(0, '#e2e8f0');
+      skyGrad.addColorStop(0.5, '#f8fafc');
+      skyGrad.addColorStop(1, '#e2e8f0');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(-900, -550, w + 1800, botY + 1150);
+
+      // Gradas superiores luminosas a lo largo de la pista horizontal
+      ctx.save();
+      const standHeight = 82;
+      ctx.beginPath();
+      ctx.moveTo(topLeft.sx - 44, topY);
+      ctx.lineTo(topLeft.sx - 12, topY - standHeight);
+      ctx.lineTo(topRight.sx + 12, topY - standHeight);
+      ctx.lineTo(topRight.sx + 44, topY);
+      ctx.closePath();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#94a3b8';
+      ctx.stroke();
+
+      // Banderines de equipo (Azul Izquierda / Rojo Derecha)
+      for (let i = 0; i < 14; i++) {
+        const lt = (i + 0.5) / 14;
+        const lx = (topLeft.sx - 8) + ((topRight.sx - topLeft.sx + 16) * lt);
+        const ly = topY - standHeight + 16;
+        ctx.fillStyle = i < 7 ? '#0ea5e9' : '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(lx, ly, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Campo de césped vibrante
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(topLeft.sx, topLeft.sy);
+      ctx.lineTo(topRight.sx, topRight.sy);
+      ctx.lineTo(botRight.sx, botRight.sy);
+      ctx.lineTo(botLeft.sx, botLeft.sy);
+      ctx.closePath();
+
+      const fieldGrad = ctx.createLinearGradient(0, topY, 0, botY);
+      fieldGrad.addColorStop(0, '#22c55e');
+      fieldGrad.addColorStop(0.5, '#16a34a');
+      fieldGrad.addColorStop(1, '#15803d');
+      ctx.fillStyle = fieldGrad;
+      ctx.fill();
+      ctx.clip();
+
+      // Franjas verticales de césped (estilo cancha horizontal)
+      const stripes = 18;
+      for (let i = 0; i < stripes; i += 2) {
+        const x1 = (w / stripes) * i;
+        const x2 = (w / stripes) * (i + 1);
+        const tl = toScreen(x1, 0);
+        const tr = toScreen(x2, 0);
+        const br = toScreen(x2, ARENA.height);
+        const bl = toScreen(x1, ARENA.height);
+
+        ctx.beginPath();
+        ctx.moveTo(tl.sx, tl.sy);
+        ctx.lineTo(tr.sx, tr.sy);
+        ctx.lineTo(br.sx, br.sy);
+        ctx.lineTo(bl.sx, bl.sy);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fill();
+      }
+
+      // Línea blanca vertical central divisoria (Izquierda vs Derecha)
+      const midTop = toScreen(w / 2, 0);
+      const midBot = toScreen(w / 2, ARENA.height);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(midTop.sx, midTop.sy);
+      ctx.lineTo(midBot.sx, midBot.sy);
+      ctx.stroke();
+
+      // Círculo central Pokébola blanca
+      const center = toScreen(w / 2, ARENA.height / 2);
+      const rx = 155 * center.widthScale;
+      const ry = 125 * center.depthScale;
+      ctx.beginPath();
+      ctx.ellipse(center.sx, center.sy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(center.sx, center.sy, rx * 0.24, ry * 0.24, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#16a34a';
+      ctx.fill();
+      ctx.stroke();
+
+      // Nombres de las regiones sutiles en el césped (Izquierda y Derecha)
+      const leftLabelPos = toScreen(w * 0.16, ARENA.height * 0.5);
+      const rightLabelPos = toScreen(w * 0.84, ARENA.height * 0.5);
+      ctx.font = '800 46px "Chakra Petch", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.fillText(state.leftRegion.name.toUpperCase(), leftLabelPos.sx, leftLabelPos.sy);
+      ctx.fillText(state.rightRegion.name.toUpperCase(), rightLabelPos.sx, rightLabelPos.sy);
+
+      ctx.restore();
+
+      // Contorno exterior blanco del estadio
+      ctx.beginPath();
+      ctx.moveTo(topLeft.sx, topLeft.sy);
+      ctx.lineTo(topRight.sx, topRight.sy);
+      ctx.lineTo(botRight.sx, botRight.sy);
+      ctx.lineTo(botLeft.sx, botLeft.sy);
+      ctx.closePath();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    }
+
+    function drawFighter(f) {
+      if (!f.alive && f.faintProgress >= 1) return;
+
+      const { sx, sy, depthScale } = toScreen(f.x, f.y);
+      const totalScale = f.scale * depthScale;
+      const hopOffset = f.alive ? Math.abs(Math.sin(f.hopPhase)) * 7 * depthScale : 0;
+      const drawX = sx + f.lungeOffset.x * depthScale;
+      const drawY = sy + f.lungeOffset.y * depthScale - hopOffset;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      if (!f.alive) {
+        ctx.globalAlpha = Math.max(0, 1 - f.faintProgress);
+        ctx.translate(drawX, drawY + f.faintProgress * 12);
+        ctx.scale(1 - f.faintProgress * 0.45, 1 - f.faintProgress * 0.45);
+        ctx.translate(-drawX, -(drawY + f.faintProgress * 12));
+      }
+
+      // Sombra natural en el césped
+      ctx.beginPath();
+      ctx.ellipse(sx, sy + 2, 18 * totalScale, 6.5 * totalScale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.34)';
+      ctx.fill();
+
+      // Sprite frontal oficial transparente (sin barras ni nombres ni círculos de color)
+      // Los sprites oficiales de PokéAPI miran hacia la izquierda por defecto:
+      // si facingDir > 0 (mirando a la derecha), volteamos horizontalmente (-1, 1)
+      const spriteSize = 72 * totalScale;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(drawX, drawY - spriteSize * 0.38);
+
+      if (f.facingDir > 0) {
+        ctx.scale(-1, 1);
+      }
+
+      if (f.sprite && f.sprite.loaded && !f.sprite.failed) {
+        ctx.drawImage(f.sprite, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, 16 * totalScale, 0, Math.PI * 2);
+        ctx.fillStyle = TYPE_COLORS[f.primaryType] || '#64748b';
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.restore();
+    }
+
+    function drawProjectiles(dt) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      for (let i = state.projectiles.length - 1; i >= 0; i--) {
+        const p = state.projectiles[i];
+        if (!p.target || !p.target.alive) {
+          state.projectiles.splice(i, 1);
+          continue;
+        }
+
+        const dx = p.target.x - p.x;
+        const dy = (p.target.y - 12) - p.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 18) {
+          applyDamageToTarget(p.attacker, p.target, p.damage, p.isCrit, p.type);
+          state.projectiles.splice(i, 1);
+          continue;
+        }
+
+        const move = p.speed * dt;
+        p.x += (dx / dist) * move;
+        p.y += (dy / dist) * move;
+
+        const { sx, sy } = toScreen(p.x, p.y);
+        p.trail.push({ sx, sy });
+        if (p.trail.length > 6) p.trail.shift();
+
+        const color = TYPE_COLORS[p.type] || '#0ea5e9';
+
+        for (let t = 0; t < p.trail.length; t++) {
+          const pt = p.trail[t];
+          const alpha = (t + 1) / p.trail.length;
+          ctx.beginPath();
+          ctx.arc(pt.sx, pt.sy, 2.5 + alpha * 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = alpha * 0.45;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        if (p.type === 'electric') {
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(-10, -4);
+          ctx.lineTo(-2, 3);
+          ctx.lineTo(4, -3);
+          ctx.lineTo(11, 2);
+          ctx.stroke();
+        } else if (p.type === 'grass') {
+          ctx.rotate(state.elapsedTime * 16);
+          ctx.fillStyle = '#16a34a';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 9, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.type === 'ice') {
+          ctx.rotate(Math.atan2(dy * 0.7, dx));
+          ctx.fillStyle = '#06b6d4';
+          ctx.beginPath();
+          ctx.moveTo(10, 0);
+          ctx.lineTo(-6, -5);
+          ctx.lineTo(-3, 0);
+          ctx.lineTo(-6, 5);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.34;
+          ctx.fill();
+
+          ctx.globalAlpha = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawEffects(dt) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+        const sw = state.shockwaves[i];
+        sw.life -= dt;
+        if (sw.life <= 0) {
+          state.shockwaves.splice(i, 1);
+          continue;
+        }
+        const progress = 1 - (sw.life / sw.maxLife);
+        const r = sw.radius + (sw.maxRadius - sw.radius) * progress;
+        const { sx, sy, depthScale } = toScreen(sw.x, sw.y);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r * depthScale, r * 0.55 * depthScale, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = sw.color;
+        ctx.globalAlpha = (1 - progress) * 0.78;
+        ctx.lineWidth = 3 * (1 - progress);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.life -= dt;
+        if (pt.life <= 0) {
+          state.particles.splice(i, 1);
+          continue;
+        }
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.vy += 140 * dt;
+
+        const { sx, sy } = toScreen(pt.x, pt.y);
+        const alpha = Math.max(0, pt.life / pt.maxLife);
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(sx, sy, pt.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 7. RITMO SIN ACELERACIÓN (PARTE EN 1.0x Y BAJA HASTA CÁMARA LENTA 0.5x / <10)
+    // ----------------------------------------------------------------------------
+    let hudUpdateAccumulator = 0;
+
+    function updatePaceAndHUD() {
+      let leftAlive = 0, leftTotal = 0, rightAlive = 0, rightTotal = 0;
+      for (const f of state.fighters) {
+        if (f.team === 'left') {
+          leftTotal++;
+          if (f.alive) leftAlive++;
+        } else {
+          rightTotal++;
+          if (f.alive) rightAlive++;
+        }
+      }
+
+      document.getElementById('hud-left-count').textContent = leftAlive;
+      document.getElementById('hud-left-total').textContent = `/${leftTotal}`;
+      document.getElementById('hud-right-count').textContent = rightAlive;
+      document.getElementById('hud-right-total').textContent = `/${rightTotal}`;
+
+      const totalAlive = leftAlive + rightAlive;
+      const leftPct = totalAlive > 0 ? (leftAlive / totalAlive) * 100 : 50;
+      document.getElementById('bar-left').style.width = `${leftPct}%`;
+      document.getElementById('bar-right').style.width = `${100 - leftPct}%`;
+      document.getElementById('hud-timer').textContent = formatBattleTime(state.elapsedTime);
+
+      if (state.status !== 'running') return;
+
+      const paceBadge = document.getElementById('pace-badge');
+      const paceDot = document.getElementById('pace-dot');
+      const paceLabel = document.getElementById('pace-label');
+      const vignette = document.getElementById('dramatic-vignette');
+      const minTeamAlive = Math.min(leftAlive, rightAlive);
+
+      if (leftAlive > 0 && rightAlive > 0) {
+        if (minTeamAlive <= 3) {
+          state.pacePhase = 'slowmo_final';
+          state.currentTimeScale = 0.20;
+          paceBadge.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-300 text-rose-800 font-extrabold';
+          paceDot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping';
+          paceLabel.textContent = 'DUELO FINAL • CÁMARA ULTRA LENTA (0.20x)';
+          vignette.style.opacity = '0.85';
+        } else if (minTeamAlive < 10) {
+          state.pacePhase = 'slowmo_final';
+          state.currentTimeScale = 0.28;
+          paceBadge.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800 font-extrabold';
+          paceDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+          paceLabel.textContent = 'MENOS DE 10 • CÁMARA LENTA (0.28x)';
+          vignette.style.opacity = '0.6';
+        } else if (minTeamAlive <= 14) {
+          state.pacePhase = 'slowmo_50';
+          state.currentTimeScale = 0.5;
+          paceBadge.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-300 text-sky-800 font-bold';
+          paceDot.className = 'w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse';
+          paceLabel.textContent = 'RECTA FINAL • CÁMARA LENTA (0.5x)';
+          vignette.style.opacity = '0.35';
+        } else if (minTeamAlive <= 20) {
+          state.pacePhase = 'slowing';
+          state.currentTimeScale = 0.75;
+          paceBadge.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold';
+          paceDot.className = 'w-1.5 h-1.5 rounded-full bg-indigo-500';
+          paceLabel.textContent = 'TENSIÓN CRECIENTE (0.75x)';
+          vignette.style.opacity = '0.15';
+        } else {
+          state.pacePhase = 'normal';
+          state.currentTimeScale = 1.0;
+          paceBadge.className = 'flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-bold';
+          paceDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+          paceLabel.textContent = 'VELOCIDAD NORMAL (1.0x)';
+          vignette.style.opacity = '0';
+        }
+      }
+
+      if (leftAlive === 0 || rightAlive === 0) {
+        const winnerSide = leftAlive >= rightAlive ? 'left' : 'right';
+        const survivorsCount = Math.max(leftAlive, rightAlive);
+        endBattle(winnerSide, survivorsCount);
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. CÁMARA INTERACTIVA COMPLETA (MOUSE, RUEGA, 1 DEDO, PINCH-TO-ZOOM Y BOTONES)
+    // ----------------------------------------------------------------------------
+    function clampZoom(z) {
+      return Math.max(ZOOM_LIMITS.min, Math.min(ZOOM_LIMITS.max, z));
+    }
+
+    function setManualCameraMode(isManual) {
+      state.camera.manualOverride = isManual;
+      const pill = document.getElementById('camera-mode-pill');
+      if (!pill) return;
+      if (isManual) {
+        pill.className = 'px-2.5 py-1 rounded-full bg-amber-50/95 backdrop-blur-md border border-amber-300 text-[10px] font-extrabold text-amber-800 shadow-sm pointer-events-none';
+        pill.textContent = '✋ Cámara libre (Pulsa Centrar)';
+      } else {
+        pill.className = 'px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 text-[10px] font-extrabold text-emerald-700 shadow-sm pointer-events-none';
+        pill.textContent = '🎯 Auto-cámara activa';
+      }
+    }
+
+    function zoomCameraAtScreenPoint(factor, screenX, screenY) {
+      setManualCameraMode(true);
+      const oldZoom = state.camera.zoom;
+      const newZoom = clampZoom(oldZoom * factor);
+      if (Math.abs(newZoom - oldZoom) < 0.0001) return;
+
+      // Mantener el punto bajo el cursor / centro del pellizco fijo en pantalla
+      const worldX = state.camera.x + (screenX - canvas.width / 2) / oldZoom;
+      const worldY = state.camera.y + (screenY - canvas.height / 2) / oldZoom;
+
+      state.camera.zoom = newZoom;
+      state.camera.targetZoom = newZoom;
+      state.camera.x = worldX - (screenX - canvas.width / 2) / newZoom;
+      state.camera.y = worldY - (screenY - canvas.height / 2) / newZoom;
+      state.camera.targetX = state.camera.x;
+      state.camera.targetY = state.camera.y;
+    }
+
+    function getAliveCombatClusters() {
+      const alive = [];
+      for (const f of state.fighters) {
+        if (!f.alive) continue;
+        const { sx, sy } = toScreen(f.x, f.y);
+        alive.push({ sx, sy });
+      }
+      if (alive.length === 0) return [];
+
+      const visited = new Array(alive.length).fill(false);
+      const exactClusters = [];
+
+      for (let i = 0; i < alive.length; i++) {
+        if (visited[i]) continue;
+        visited[i] = true;
+        const members = [alive[i]];
+        const queue = [alive[i]];
+
+        while (queue.length > 0) {
+          const curr = queue.shift();
+          for (let j = 0; j < alive.length; j++) {
+            if (visited[j]) continue;
+            if (Math.hypot(alive[j].sx - curr.sx, alive[j].sy - curr.sy) < 300) {
+              visited[j] = true;
+              members.push(alive[j]);
+              queue.push(alive[j]);
+            }
+          }
+        }
+        const cx = members.reduce((acc, m) => acc + m.sx, 0) / members.length;
+        const cy = members.reduce((acc, m) => acc + m.sy, 0) / members.length;
+        exactClusters.push({ x: cx, y: cy, size: members.length });
+      }
+      return exactClusters;
+    }
+
+    function updateCamera(dt) {
+      // Si el usuario tomó control manual de la cámara (arrastre o zoom), no sobrescribir
+      if (state.camera.manualOverride) return;
+
+      if (state.status === 'running' || state.status === 'countdown') {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        let aliveCount = 0;
+
+        for (const f of state.fighters) {
+          if (!f.alive) continue;
+          aliveCount++;
+          const { sx, sy } = toScreen(f.x, f.y);
+          if (sx < minX) minX = sx;
+          if (sx > maxX) maxX = sx;
+          if (sy < minY) minY = sy;
+          if (sy > maxY) maxY = sy;
+        }
+
+        if (aliveCount > 0) {
+          let targetX = (minX + maxX) / 2;
+          let targetY = (minY + maxY) / 2 - 8;
+          let paddingX = 360;
+          let paddingY = 300;
+          let minZoomFloor = 0.42;
+          let maxZoomAllowed = 0.85;
+
+          if (state.status === 'running' && !state.paused && (state.pacePhase === 'slowmo_50' || state.pacePhase === 'slowmo_final')) {
+            const clusters = getAliveCombatClusters();
+            if (clusters.length > 1) {
+              state.camera.focusSwitchTimer += dt;
+              if (state.camera.focusSwitchTimer >= 2.3) {
+                state.camera.focusSwitchTimer = 0;
+                state.camera.focusGroupIndex = (state.camera.focusGroupIndex + 1) % clusters.length;
+              }
+              const activeCluster = clusters[state.camera.focusGroupIndex % clusters.length];
+              targetX = activeCluster.x * 0.72 + targetX * 0.28;
+              targetY = activeCluster.y * 0.72 + targetY * 0.28 - 8;
+            }
+
+            if (state.pacePhase === 'slowmo_final') {
+              paddingX = 320;
+              paddingY = 260;
+              minZoomFloor = 1.05;
+              maxZoomAllowed = 1.32;
+            } else {
+              paddingX = 340;
+              paddingY = 280;
+              minZoomFloor = 0.85;
+              maxZoomAllowed = 1.12;
+            }
+          }
+
+          const spanX = Math.max(280, (maxX - minX) + paddingX);
+          const spanY = Math.max(240, (maxY - minY) + paddingY);
+          const zoomX = canvas.width / spanX;
+          const zoomY = canvas.height / spanY;
+          const idealZoom = Math.max(minZoomFloor, Math.min(maxZoomAllowed, Math.min(zoomX, zoomY)));
+
+          state.camera.targetX = targetX;
+          state.camera.targetY = targetY;
+          state.camera.targetZoom = idealZoom;
+        }
+      }
+
+      const smoothness = (state.pacePhase === 'slowmo_50' || state.pacePhase === 'slowmo_final') ? 0.12 : 0.05;
+      const lerp = 1 - Math.pow(smoothness, dt);
+      state.camera.x += (state.camera.targetX - state.camera.x) * lerp;
+      state.camera.y += (state.camera.targetY - state.camera.y) * lerp;
+      state.camera.zoom += (state.camera.targetZoom - state.camera.zoom) * lerp;
+    }
+
+    function fitStadiumToScreen(immediate = false) {
+      const fieldW = ARENA.width * ARENA.bottomWidthFactor + 140;
+      const fieldH = ARENA.groundHeight + ARENA.horizonY + 140;
+      const z = Math.min(canvas.width / fieldW, canvas.height / fieldH);
+      const clampedZ = Math.max(0.38, Math.min(1.05, z));
+
+      state.camera.targetX = ARENA.width / 2;
+      state.camera.targetY = ARENA.horizonY + ARENA.groundHeight * 0.5;
+      state.camera.targetZoom = clampedZ;
+
+      if (immediate) {
+        state.camera.x = state.camera.targetX;
+        state.camera.y = state.camera.targetY;
+        state.camera.zoom = state.camera.targetZoom;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 9. MODAL DE VICTORIA: CARRUSEL SOLO DE POKÉMON CON BAJAS Y CONFETI TOP 3
+    // ----------------------------------------------------------------------------
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confettiCtx = confettiCanvas.getContext('2d');
+    let confettiPieces = [];
+    let confettiAnimId = null;
+
+    function launchTop3Confetti() {
+      const card = document.getElementById('victory-card');
+      confettiCanvas.width = card.offsetWidth || 640;
+      confettiCanvas.height = card.offsetHeight || 440;
+
+      sfx.playConfettiPop();
+
+      const colors = ['#eab308', '#0ea5e9', '#f43f5e', '#22c55e', '#a855f7', '#f97316'];
+      const cx = confettiCanvas.width / 2;
+      const cy = confettiCanvas.height * 0.45;
+
+      for (let i = 0; i < 65; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
+        const speed = 130 + Math.random() * 260;
+        confettiPieces.push({
+          x: cx + (Math.random() - 0.5) * 80,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 60,
+          size: 5 + Math.random() * 5,
+          color: colors[i % colors.length],
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 10,
+          life: 1.8 + Math.random() * 0.8
+        });
+      }
+
+      if (!confettiAnimId) {
+        let lastT = performance.now();
+        const step = (now) => {
+          const dt = Math.min(0.05, (now - lastT) / 1000);
+          lastT = now;
+
+          confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+          for (let i = confettiPieces.length - 1; i >= 0; i--) {
+            const p = confettiPieces[i];
+            p.life -= dt;
+            if (p.life <= 0) {
+              confettiPieces.splice(i, 1);
+              continue;
+            }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += 320 * dt;
+            p.vx *= 0.985;
+            p.rotation += p.rotSpeed * dt;
+
+            confettiCtx.save();
+            confettiCtx.translate(p.x, p.y);
+            confettiCtx.rotate(p.rotation);
+            confettiCtx.globalAlpha = Math.min(1, p.life);
+            confettiCtx.fillStyle = p.color;
+            confettiCtx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size * 0.55);
+            confettiCtx.restore();
+          }
+
+          if (confettiPieces.length > 0) {
+            confettiAnimId = requestAnimationFrame(step);
+          } else {
+            confettiAnimId = null;
+          }
+        };
+        confettiAnimId = requestAnimationFrame(step);
+      }
+    }
+
+    const carouselState = {
+      items: [],
+      currentIndex: 0,
+      timerId: null
+    };
+
+    function renderCarouselSlide() {
+      const track = document.getElementById('carousel-track');
+      const pill = document.getElementById('carousel-status-pill');
+      const counter = document.getElementById('carousel-counter');
+      const total = carouselState.items.length;
+      if (total === 0) return;
+
+      const idx = carouselState.currentIndex;
+      const activePoke = carouselState.items[idx];
+      const top3Rank = activePoke.top3Rank;
+
+      counter.textContent = `${idx + 1} / ${total}`;
+
+      if (top3Rank) {
+        pill.className = 'inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-xs font-extrabold shadow-2xs';
+        pill.textContent = `🎉 TOP #${top3Rank} MÁS ELIMINACIONES (${activePoke.kills} KOs)`;
+        launchTop3Confetti();
+      } else {
+        pill.className = 'inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 text-[11px] font-bold shadow-2xs';
+        pill.textContent = `Combatiente con ${activePoke.kills} ${activePoke.kills === 1 ? 'eliminación' : 'eliminaciones'}`;
+      }
+
+      const offsets = [-2, -1, 0, 1, 2];
+      const html = offsets.map(offset => {
+        if (total === 1 && offset !== 0) return '';
+        if (total === 2 && (offset < -1 || offset > 0)) return '';
+
+        const itemIdx = (idx + offset + total * 10) % total;
+        const poke = carouselState.items[itemIdx];
+        const isCenter = offset === 0;
+        const isTop3 = Boolean(poke.top3Rank);
+
+        const translateX = -offset * 155;
+        const scale = isCenter ? 1.06 : (Math.abs(offset) === 1 ? 0.82 : 0.65);
+        const opacity = isCenter ? 1 : (Math.abs(offset) === 1 ? 0.55 : 0);
+        const zIndex = isCenter ? 20 : (10 - Math.abs(offset));
+
+        const cardBorder = isCenter
+          ? (isTop3 ? 'border-amber-400 bg-white shadow-[0_12px_28px_rgba(245,158,11,0.25)]' : 'border-sky-400 bg-white shadow-[0_10px_24px_rgba(14,165,233,0.18)]')
+          : 'border-slate-200 bg-slate-50';
+
+        return `
+          <div class="carousel-item w-40 sm:w-44 rounded-2xl border-2 ${cardBorder} p-3 text-center flex flex-col items-center justify-between"
+               style="transform: translate(calc(-50% + ${translateX}px), -50%) scale(${scale}); opacity: ${opacity}; z-index: ${zIndex};">
+            <div class="w-full flex items-center justify-between text-[10px] font-extrabold">
+              <span class="text-slate-400">#${String(poke.id).padStart(3, '0')}</span>
+              ${isTop3
+                ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">TOP #${poke.top3Rank}</span>`
+                : `<span class="text-slate-500">${poke.kills} KO</span>`
+              }
+            </div>
+
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${poke.id}.png"
+                 alt="${poke.name}"
+                 class="w-24 h-24 object-contain my-1 drop-shadow-[0_6px_8px_rgba(15,23,42,0.22)]" />
+
+            <div class="w-full">
+              <div class="font-display font-extrabold text-xs sm:text-sm text-slate-900 truncate">${poke.name}</div>
+              <div class="text-[11px] font-bold ${isTop3 ? 'text-amber-700' : 'text-slate-500'} mt-0.5">
+                ${poke.kills} ${poke.kills === 1 ? 'eliminación' : 'eliminaciones'}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      track.innerHTML = html;
+    }
+
+    function startWinnerCarousel(winningTeamFighters) {
+      if (carouselState.timerId) {
+        clearInterval(carouselState.timerId);
+        carouselState.timerId = null;
+      }
+      confettiPieces = [];
+
+      let fightersWithKills = winningTeamFighters
+        .filter(f => f.kills >= 1)
+        .sort((a, b) => (b.kills - a.kills) || (b.damageDealt - a.damageDealt) || (a.id - b.id));
+
+      if (fightersWithKills.length === 0) {
+        fightersWithKills = [...winningTeamFighters]
+          .sort((a, b) => (b.alive - a.alive) || (b.damageDealt - a.damageDealt))
+          .slice(0, 1);
+      }
+
+      const top3Map = new Map();
+      fightersWithKills.slice(0, 3).forEach((p, i) => {
+        if (p.kills > 0) top3Map.set(p.uid, i + 1);
+      });
+
+      carouselState.items = fightersWithKills.map(p => ({
+        uid: p.uid,
+        id: p.id,
+        name: p.name,
+        kills: p.kills,
+        alive: p.alive,
+        top3Rank: top3Map.get(p.uid) || null
+      }));
+
+      carouselState.currentIndex = 0;
+      renderCarouselSlide();
+
+      if (carouselState.items.length > 1) {
+        carouselState.timerId = setInterval(() => {
+          carouselState.currentIndex = (carouselState.currentIndex + 1) % carouselState.items.length;
+          renderCarouselSlide();
+        }, 1750);
+      }
+    }
+
+    function endBattle(winnerSide, survivingCount) {
+      state.status = 'ended';
+      setPaused(false);
+      document.getElementById('dramatic-vignette').style.opacity = '0';
+      document.getElementById('camera-controls').classList.add('hidden');
+
+      sfx.playVictoryFanfare();
+
+      const winRegion = winnerSide === 'left' ? state.leftRegion : state.rightRegion;
+      const loseRegion = winnerSide === 'left' ? state.rightRegion : state.leftRegion;
+
+      const { rank } = saveBattleRecord(winRegion.name, loseRegion.name, state.elapsedTime, survivingCount);
+      renderRankingList();
+
+      const recordBadge = document.getElementById('victory-record-badge');
+      if (rank) {
+        recordBadge.textContent = `🏆 NUEVO RÉCORD TOP #${rank} EN EL RANKING`;
+      } else {
+        recordBadge.textContent = 'CAMPEÓN DE LA ARENA';
+      }
+
+      document.getElementById('victory-title').textContent = `¡${winRegion.name.toUpperCase()} GANA LA BATALLA!`;
+      document.getElementById('victory-subtitle').textContent =
+        `vs ${loseRegion.name} • Tiempo: ${formatBattleTime(state.elapsedTime)} • ${survivingCount} sobrevivientes`;
+
+      const winningFighters = state.fighters.filter(f => f.team === winnerSide);
+      startWinnerCarousel(winningFighters);
+
+      const overlay = document.getElementById('victory-overlay');
+      overlay.classList.add('is-visible');
+    }
+
+    // ----------------------------------------------------------------------------
+    // 10. CONTROL DE PAUSA Y BUCLE PRINCIPAL DE JUEGO
+    // ----------------------------------------------------------------------------
+    function setPaused(paused) {
+      state.paused = paused;
+      const btnPause = document.getElementById('btn-pause-toggle');
+      const pauseBanner = document.getElementById('pause-banner');
+
+      if (paused && (state.status === 'running' || state.status === 'countdown')) {
+        btnPause.innerHTML = '▶ Reanudar';
+        btnPause.className = 'px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-600 font-extrabold transition cursor-pointer flex items-center gap-1 shadow-xs';
+        pauseBanner.classList.remove('hidden');
+      } else {
+        state.paused = false;
+        btnPause.innerHTML = '⏸ Pausar';
+        btnPause.className = 'px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold transition cursor-pointer flex items-center gap-1';
+        pauseBanner.classList.add('hidden');
+      }
+    }
+
+    function updateCountdown(rawDt) {
+      state.countdownRemaining -= rawDt;
+      const overlay = document.getElementById('countdown-overlay');
+      const numEl = document.getElementById('countdown-number');
+      const subEl = document.getElementById('countdown-subtitle');
+
+      if (state.countdownRemaining > 0) {
+        const ceilVal = Math.ceil(state.countdownRemaining);
+        if (ceilVal !== state.lastCountdownInt) {
+          state.lastCountdownInt = ceilVal;
+          subEl.textContent = '¡PREPÁRENSE PARA EL COMBATE!';
+          numEl.textContent = ceilVal;
+          numEl.className = 'font-display text-6xl sm:text-8xl font-extrabold text-slate-900 leading-none tracking-tight';
+          void numEl.offsetWidth;
+          numEl.classList.add('countdown-pop');
+          sfx.playCountdownBeep(ceilVal);
+        }
+      } else if (state.countdownRemaining > -0.55) {
+        if (state.lastCountdownInt !== 0) {
+          state.lastCountdownInt = 0;
+          subEl.textContent = '¡COMIENZA EL DUELO!';
+          numEl.textContent = '¡BATALLA!';
+          numEl.className = 'font-display text-4xl sm:text-6xl font-extrabold text-rose-600 leading-none tracking-wider';
+          void numEl.offsetWidth;
+          numEl.classList.add('countdown-pop');
+          sfx.playCountdownBeep(0);
+        }
+      } else {
+        overlay.classList.add('hidden');
+        state.status = 'running';
+        state.pacePhase = 'normal';
+        state.currentTimeScale = 1.0;
+        updatePaceAndHUD();
+      }
+    }
+
+    function gameLoop(timestamp) {
+      if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+      const rawDt = Math.min(0.05, (timestamp - state.lastFrameTime) / 1000);
+      state.lastFrameTime = timestamp;
+
+      // Congelar simulación y cuenta regresiva cuando está en pausa, pero permitir mover/zoom cámara
+      if (!state.paused) {
+        if (state.status === 'countdown') {
+          updateCountdown(rawDt);
+        }
+
+        const simDt = state.status === 'running' ? rawDt * state.currentTimeScale : 0;
+
+        if (state.status === 'running') {
+          state.elapsedTime += simDt;
+
+          for (let i = 0; i < state.fighters.length; i++) {
+            state.fighters[i].update(simDt, state.fighters);
+          }
+
+          resolveHitboxCollisions(state.fighters);
+
+          hudUpdateAccumulator += rawDt;
+          if (hudUpdateAccumulator >= 0.08) {
+            hudUpdateAccumulator = 0;
+            updatePaceAndHUD();
+          }
+        }
+      }
+
+      const activeSimDt = (!state.paused && state.status === 'running') ? rawDt * state.currentTimeScale : 0;
+
+      updateCamera(rawDt);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(state.camera.zoom, state.camera.zoom);
+      ctx.translate(-state.camera.x, -state.camera.y);
+
+      drawStadiumBackground();
+
+      const sortedFighters = [...state.fighters].sort((a, b) => a.y - b.y);
+      for (let i = 0; i < sortedFighters.length; i++) {
+        drawFighter(sortedFighters[i]);
+      }
+
+      drawProjectiles(activeSimDt);
+      drawEffects(activeSimDt);
+
+      ctx.restore();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 11. INICIO DE BATALLA (SPAWN EN MITAD TRASERA IZQUIERDA Y DERECHA)
+    // ----------------------------------------------------------------------------
+    async function startNewBattle() {
+      sfx.unlock();
+
+      const leftIdx = parseInt(document.getElementById('select-region-left').value, 10);
+      const rightIdx = parseInt(document.getElementById('select-region-right').value, 10);
+
+      if (leftIdx === rightIdx) {
+        document.getElementById('same-region-warning').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('same-region-warning').classList.add('hidden');
+
+      if (carouselState.timerId) {
+        clearInterval(carouselState.timerId);
+        carouselState.timerId = null;
+      }
+
+      setPaused(false);
+      setManualCameraMode(false);
+
+      state.leftRegion = REGIONS[leftIdx];
+      state.rightRegion = REGIONS[rightIdx];
+
+      document.getElementById('hud-left-name').textContent = state.leftRegion.name.toUpperCase();
+      document.getElementById('hud-right-name').textContent = state.rightRegion.name.toUpperCase();
+
+      const btnStart = document.getElementById('btn-start-battle');
+      const loadingBox = document.getElementById('loading-container');
+      const loadingBar = document.getElementById('loading-bar');
+      const loadingPct = document.getElementById('loading-percent');
+      const loadingStatus = document.getElementById('loading-status');
+
+      btnStart.disabled = true;
+      btnStart.classList.add('opacity-50', 'pointer-events-none');
+      loadingBox.classList.remove('hidden');
+      loadingBar.style.width = '0%';
+      loadingPct.textContent = '0%';
+      state.status = 'loading';
+
+      try {
+        loadingStatus.textContent = `Cargando ${state.leftRegion.name} (${state.leftRegion.count} Pokémon)...`;
+        const leftRoster = await loadRegionRoster(state.leftRegion, (done, total) => {
+          const pct = Math.round((done / total) * 50);
+          loadingBar.style.width = `${pct}%`;
+          loadingPct.textContent = `${pct}%`;
+        });
+
+        loadingStatus.textContent = `Cargando ${state.rightRegion.name} (${state.rightRegion.count} Pokémon)...`;
+        const rightRoster = await loadRegionRoster(state.rightRegion, (done, total) => {
+          const pct = 50 + Math.round((done / total) * 50);
+          loadingBar.style.width = `${pct}%`;
+          loadingPct.textContent = `${pct}%`;
+        });
+
+        state.fighters = [];
+        state.projectiles = [];
+        state.particles = [];
+        state.shockwaves = [];
+        state.elapsedTime = 0;
+
+        // Spawn aleatorio bien distribuido en la mitad trasera izquierda (0.04..0.28 W)
+        // y mitad trasera derecha (0.72..0.96 W)
+        const placedPositions = [];
+        const spawnTeamRearHorizontal = (roster, team) => {
+          const count = roster.length;
+          const marginY = 75;
+          const usableH = ARENA.height - marginY * 2;
+          const minX = team === 'left' ? (ARENA.width * 0.04) : (ARENA.width * 0.72);
+          const maxX = team === 'left' ? (ARENA.width * 0.28) : (ARENA.width * 0.96);
+          const usableW = maxX - minX;
+
+          const areaPerUnit = (usableW * usableH) / Math.max(1, count);
+          const baseMinDist = Math.max(46, Math.min(72, Math.sqrt(areaPerUnit) * 0.78));
+
+          roster.forEach((pokeData) => {
+            let chosenX = minX + Math.random() * usableW;
+            let chosenY = marginY + Math.random() * usableH;
+            let currentMinDist = baseMinDist;
+
+            for (let attempt = 0; attempt < 48; attempt++) {
+              const candX = minX + Math.random() * usableW;
+              const candY = marginY + Math.random() * usableH;
+              let tooClose = false;
+
+              for (let j = 0; j < placedPositions.length; j++) {
+                const pos = placedPositions[j];
+                if (pos.team !== team) continue;
+                const dx = candX - pos.x;
+                const dy = candY - pos.y;
+                if (dx * dx + dy * dy < currentMinDist * currentMinDist) {
+                  tooClose = true;
+                  break;
+                }
+              }
+
+              if (!tooClose) {
+                chosenX = candX;
+                chosenY = candY;
+                break;
+              }
+              if (attempt % 14 === 13) currentMinDist *= 0.85;
+            }
+
+            placedPositions.push({ x: chosenX, y: chosenY, team });
+            state.fighters.push(new PokemonFighter(pokeData, team, chosenX, chosenY));
+          });
+        };
+
+        spawnTeamRearHorizontal(leftRoster, 'left');
+        spawnTeamRearHorizontal(rightRoster, 'right');
+        resolveHitboxCollisions(state.fighters);
+
+        document.getElementById('setup-overlay').classList.add('hidden');
+        document.getElementById('victory-overlay').classList.remove('is-visible');
+        document.getElementById('battle-hud').classList.remove('hidden');
+        document.getElementById('camera-controls').classList.remove('hidden');
+
+        // Cuenta regresiva de 5 segundos
+        state.countdownRemaining = 5.0;
+        state.lastCountdownInt = 5;
+        state.pacePhase = 'normal';
+        state.currentTimeScale = 1.0;
+        state.status = 'countdown';
+
+        const cdOverlay = document.getElementById('countdown-overlay');
+        const cdNum = document.getElementById('countdown-number');
+        const cdSub = document.getElementById('countdown-subtitle');
+        cdSub.textContent = '¡PREPÁRENSE PARA EL COMBATE!';
+        cdNum.textContent = '5';
+        cdNum.className = 'font-display text-6xl sm:text-8xl font-extrabold text-slate-900 leading-none tracking-tight countdown-pop';
+        cdOverlay.classList.remove('hidden');
+        sfx.playCountdownBeep(5);
+
+        fitStadiumToScreen(true);
+        updatePaceAndHUD();
+      } finally {
+        btnStart.disabled = false;
+        btnStart.classList.remove('opacity-50', 'pointer-events-none');
+        loadingBox.classList.add('hidden');
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 12. GESTOS DE CÁMARA (MOUSE DRAG, WHEEL, TOUCH DRAG & PINCH-TO-ZOOM) E INTERFAZ
+    // ----------------------------------------------------------------------------
+    function setupCameraGestures() {
+      let isMouseDragging = false;
+      let lastMouseX = 0;
+      let lastMouseY = 0;
+
+      // Mouse Drag (Pan)
+      canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isMouseDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        setManualCameraMode(true);
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isMouseDragging) return;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        state.camera.x -= dx / state.camera.zoom;
+        state.camera.y -= dy / state.camera.zoom;
+        state.camera.targetX = state.camera.x;
+        state.camera.targetY = state.camera.y;
+      });
+
+      window.addEventListener('mouseup', () => {
+        isMouseDragging = false;
+      });
+
+      // Rueda del ratón (Zoom centrado en el cursor)
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.14 : (1 / 1.14);
+        zoomCameraAtScreenPoint(factor, e.clientX, e.clientY);
+      }, { passive: false });
+
+      // Gestos táctiles: 1 dedo para mover (pan), 2 dedos para pellizcar (pinch-to-zoom)
+      let touchMode = 'none'; // 'none' | 'pan' | 'pinch'
+      let lastTouchX = 0;
+      let lastTouchY = 0;
+      let lastPinchDist = 0;
+      let lastPinchMidX = 0;
+      let lastPinchMidY = 0;
+
+      const getTouchDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const getTouchMid = (t1, t2) => ({
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2
+      });
+
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          touchMode = 'pan';
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+          setManualCameraMode(true);
+        } else if (e.touches.length >= 2) {
+          touchMode = 'pinch';
+          lastPinchDist = Math.max(10, getTouchDist(e.touches[0], e.touches[1]));
+          const mid = getTouchMid(e.touches[0], e.touches[1]);
+          lastPinchMidX = mid.x;
+          lastPinchMidY = mid.y;
+          setManualCameraMode(true);
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && touchMode === 'pan') {
+          e.preventDefault();
+          const tx = e.touches[0].clientX;
+          const ty = e.touches[0].clientY;
+          const dx = tx - lastTouchX;
+          const dy = ty - lastTouchY;
+          lastTouchX = tx;
+          lastTouchY = ty;
+
+          state.camera.x -= dx / state.camera.zoom;
+          state.camera.y -= dy / state.camera.zoom;
+          state.camera.targetX = state.camera.x;
+          state.camera.targetY = state.camera.y;
+        } else if (e.touches.length >= 2) {
+          e.preventDefault();
+          const newDist = Math.max(10, getTouchDist(e.touches[0], e.touches[1]));
+          const mid = getTouchMid(e.touches[0], e.touches[1]);
+
+          if (touchMode !== 'pinch') {
+            touchMode = 'pinch';
+            lastPinchDist = newDist;
+            lastPinchMidX = mid.x;
+            lastPinchMidY = mid.y;
+            return;
+          }
+
+          // Desplazamiento simultáneo con el punto medio de los dos dedos
+          const panDx = mid.x - lastPinchMidX;
+          const panDy = mid.y - lastPinchMidY;
+          state.camera.x -= panDx / state.camera.zoom;
+          state.camera.y -= panDy / state.camera.zoom;
+
+          // Zoom proporcional a la distancia entre los dos dedos
+          const scaleFactor = newDist / lastPinchDist;
+          zoomCameraAtScreenPoint(scaleFactor, mid.x, mid.y);
+
+          lastPinchDist = newDist;
+          lastPinchMidX = mid.x;
+          lastPinchMidY = mid.y;
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', (e) => {
+        if (e.touches.length === 0) {
+          touchMode = 'none';
+        } else if (e.touches.length === 1) {
+          touchMode = 'pan';
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+        }
+      });
+
+      // Botones flotantes en pantalla (+ Acercar, - Alejar, Centrar)
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        zoomCameraAtScreenPoint(1.25, canvas.width / 2, canvas.height / 2);
+      });
+
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        zoomCameraAtScreenPoint(1 / 1.25, canvas.width / 2, canvas.height / 2);
+      });
+
+      document.getElementById('btn-camera-center').addEventListener('click', () => {
+        setManualCameraMode(false);
+        state.camera.focusSwitchTimer = 0;
+        if (state.paused || state.status === 'countdown') {
+          fitStadiumToScreen(false);
+        }
+      });
+    }
+
+    function syncMuteButtons() {
+      const btnSetup = document.getElementById('btn-setup-mute');
+      const btnHud = document.getElementById('btn-hud-mute');
+      if (sfx.muted) {
+        btnSetup.textContent = '🔇';
+        btnHud.textContent = '🔇 Silenciado';
+      } else {
+        btnSetup.textContent = '🔊';
+        btnHud.textContent = '🔊 Sonido';
+      }
+    }
+
+    function initUI() {
+      const selLeft = document.getElementById('select-region-left');
+      const selRight = document.getElementById('select-region-right');
+      const btnStart = document.getElementById('btn-start-battle');
+      const sameWarn = document.getElementById('same-region-warning');
+
+      const validateSelection = () => {
+        const idxL = parseInt(selLeft.value, 10);
+        const idxR = parseInt(selRight.value, 10);
+        if (idxL === idxR) {
+          sameWarn.classList.remove('hidden');
+          btnStart.disabled = true;
+          btnStart.classList.add('opacity-45', 'cursor-not-allowed');
+        } else {
+          sameWarn.classList.add('hidden');
+          btnStart.disabled = false;
+          btnStart.classList.remove('opacity-45', 'cursor-not-allowed');
+        }
+      };
+
+      selLeft.addEventListener('change', validateSelection);
+      selRight.addEventListener('change', validateSelection);
+      validateSelection();
+
+      btnStart.addEventListener('click', startNewBattle);
+
+      // Botón de Pausa / Reanudar
+      document.getElementById('btn-pause-toggle').addEventListener('click', () => {
+        if (state.status !== 'running' && state.status !== 'countdown') return;
+        const nextPaused = !state.paused;
+        setPaused(nextPaused);
+        sfx.playPauseClick(nextPaused);
+      });
+
+      // Atajo de teclado Espaciador para Pausa rápida
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && (state.status === 'running' || state.status === 'countdown')) {
+          e.preventDefault();
+          const nextPaused = !state.paused;
+          setPaused(nextPaused);
+          sfx.playPauseClick(nextPaused);
+        }
+      });
+
+      const handleToggleMute = () => {
+        sfx.toggleMute();
+        syncMuteButtons();
+      };
+      document.getElementById('btn-setup-mute').addEventListener('click', handleToggleMute);
+      document.getElementById('btn-hud-mute').addEventListener('click', handleToggleMute);
+
+      const showSetupSelect = () => {
+        if (carouselState.timerId) {
+          clearInterval(carouselState.timerId);
+          carouselState.timerId = null;
+        }
+        setPaused(false);
+        state.status = 'setup';
+        document.getElementById('countdown-overlay').classList.add('hidden');
+        document.getElementById('dramatic-vignette').style.opacity = '0';
+        document.getElementById('battle-hud').classList.add('hidden');
+        document.getElementById('camera-controls').classList.add('hidden');
+        document.getElementById('victory-overlay').classList.remove('is-visible');
+        document.getElementById('setup-overlay').classList.remove('hidden');
+        document.getElementById('panel-ranking').classList.add('hidden');
+        document.getElementById('panel-region-select').classList.remove('hidden');
+      };
+
+      const showRankingPanel = () => {
+        renderRankingList();
+        document.getElementById('victory-overlay').classList.remove('is-visible');
+        document.getElementById('setup-overlay').classList.remove('hidden');
+        document.getElementById('panel-region-select').classList.add('hidden');
+        document.getElementById('panel-ranking').classList.remove('hidden');
+      };
+
+      document.getElementById('btn-toggle-ranking').addEventListener('click', showRankingPanel);
+      document.getElementById('btn-victory-ranking').addEventListener('click', showRankingPanel);
+      document.getElementById('btn-back-to-select').addEventListener('click', () => {
+        document.getElementById('panel-ranking').classList.add('hidden');
+        document.getElementById('panel-region-select').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-abort-to-menu').addEventListener('click', showSetupSelect);
+      document.getElementById('btn-new-regions').addEventListener('click', showSetupSelect);
+      document.getElementById('btn-rematch').addEventListener('click', startNewBattle);
+
+      document.getElementById('btn-carousel-prev').addEventListener('click', () => {
+        if (carouselState.items.length === 0) return;
+        carouselState.currentIndex = (carouselState.currentIndex - 1 + carouselState.items.length) % carouselState.items.length;
+        renderCarouselSlide();
+      });
+
+      document.getElementById('btn-carousel-next').addEventListener('click', () => {
+        if (carouselState.items.length === 0) return;
+        carouselState.currentIndex = (carouselState.currentIndex + 1) % carouselState.items.length;
+        renderCarouselSlide();
+      });
+
+      setupCameraGestures();
+
+      const resizeCanvas = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        if (state.status === 'setup' && !state.camera.manualOverride) {
+          fitStadiumToScreen(true);
+        }
+      };
+
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+      renderRankingList();
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', () => {
+        initUI();
+        requestAnimationFrame(gameLoop);
+      });
+    } else {
+      initUI();
+      requestAnimationFrame(gameLoop);
+    }
+  </script>
+</body>
+</html>
