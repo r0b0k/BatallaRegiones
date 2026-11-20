@@ -1,428 +1,2181 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Batalla de Regiones Pokémon | Arena Táctica v4</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet" />
-<style>
-body{font-family:'Plus Jakarta Sans',sans-serif;background:#f8fafc;color:#0f172a}
-h1,h2,.fd{font-family:'Fredoka',sans-serif}
-.btn{transition:transform .1s,box-shadow .1s;box-shadow:0 4px 0 rgba(15,23,42,.25)}
-.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 rgba(15,23,42,.25)}
-.btn:disabled{opacity:.6}
-@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
-.pop{animation:pop .28s ease-out forwards}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
-@media(prefers-reduced-motion:reduce){.pop{animation:none}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batalla de Regiones Pokémon | Arena Táctica v3.2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Fredoka', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--font-body);
+      background-color: #f8fafc;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, .font-display {
+      font-family: var(--font-display);
+    }
+
+    .arena-bg {
+      background-color: #f8fafc;
+      background-image:
+        radial-gradient(#cbd5e1 1px, transparent 1px),
+        radial-gradient(#e2e8f0 1px, #f8fafc 1px);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+    }
+
+    .btn-arcade {
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 4px 0 rgba(15, 23, 42, 0.25);
+    }
+    .btn-arcade:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.25);
+    }
+
+    @keyframes pulseSlowmo {
+      0%, 100% { box-shadow: inset 0 0 35px rgba(239, 68, 68, 0.35); }
+      50% { box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.65); }
+    }
+    .slowmo-vignette {
+      animation: pulseSlowmo 1.2s infinite ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      70% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* Carrusel Fluido con nodos persistentes */
+    .carousel-stage {
+      perspective: 1000px;
+      position: relative;
+      height: 215px;
+    }
+    .carousel-item {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.52s ease;
+      will-change: transform, opacity;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+  </style>
 </head>
-<body class="min-h-screen">
+<body class="arena-bg min-h-screen flex flex-col">
 
-<header class="bg-white border-b border-slate-200 sticky top-0 z-40">
-  <div class="max-w-5xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-8 h-8 shrink-0 rounded-full bg-red-600 border-[3px] border-slate-900 relative flex items-center justify-center">
-        <div class="w-full h-1 bg-slate-900 absolute"></div><div class="w-2.5 h-2.5 rounded-full bg-white border-2 border-slate-900 z-10"></div>
+  <!-- HEADER COMPACTO Y RESPONSIVO -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <!-- Logo -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-red-600 border-[3px] border-slate-900 relative flex items-center justify-center shadow-sm">
+          <div class="w-full h-1 bg-slate-900 absolute"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-white border-2 border-slate-900 z-10"></div>
+        </div>
+        <div class="truncate">
+          <h1 class="font-display font-extrabold text-base sm:text-xl tracking-tight text-slate-900 leading-none truncate">
+            BATALLA DE REGIONES <span class="text-red-600">POKÉMON</span>
+          </h1>
+          <p class="hidden sm:block text-[11px] font-semibold text-slate-500 tracking-wide uppercase mt-0.5">
+            Edición Táctica • Cámara Cinemática • Habilidades y Modos
+          </p>
+        </div>
       </div>
-      <h1 class="font-bold text-base sm:text-xl truncate">BATALLA DE REGIONES <span class="text-red-600">POKÉMON</span></h1>
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="flex items-center gap-2 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200">
-        <button onclick="toggleAudio()" id="btn-sound" title="Sonido">🔊</button>
-        <input type="range" min="0" max="100" value="55" oninput="audio.vol=this.value/100" class="w-14 sm:w-20 accent-red-600" aria-label="Volumen" />
-        <button onclick="toggleMusic()" id="btn-music" class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300">🎵 ON</button>
+
+      <!-- Controles Desktop -->
+      <div class="hidden md:flex items-center gap-2.5">
+        <!-- Control de Audio y Volumen -->
+        <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+          <button onclick="toggleAudio()" id="btn-sound" title="Silenciar/Activar Audio" class="text-sm">🔊</button>
+          <input type="range" id="volume-slider" min="0" max="100" value="55" oninput="updateVolume(this.value)" class="w-16 accent-red-600 cursor-pointer" title="Volumen General" />
+          <button onclick="toggleMusic()" id="btn-music" class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition" title="Música Dinámica">
+            🎵 Música: ON
+          </button>
+        </div>
+
+        <!-- Ranking -->
+        <button onclick="openRankingModal()" class="btn-arcade px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer">
+          <span>🏆</span>
+          <span>Ranking</span>
+        </button>
       </div>
-      <button onclick="openRanking()" class="btn px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 font-extrabold text-sm">🏆<span class="hidden sm:inline"> Ranking</span></button>
-    </div>
-  </div>
-</header>
 
-<!-- CONFIGURACIÓN -->
-<main id="setup" class="max-w-5xl mx-auto px-3 sm:px-6 py-5">
-  <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-      <div class="flex flex-wrap items-center gap-2">
-        <select id="mode" onchange="onMode()" class="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-sm font-extrabold" aria-label="Modo">
-          <option value="duel">⚔️ Duelo (2 regiones)</option>
-          <option value="royal">👑 Batalla campal (4 regiones)</option>
-          <option value="tournament">🏆 Torneo (4 regiones)</option>
-          <option value="mixed">🧬 Equipos mixtos</option>
-        </select>
-        <select id="filter" onchange="saveCfg()" class="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-sm font-bold" aria-label="Filtro">
-          <option value="all">Todos los Pokémon</option>
-          <option value="nolegend">🚫 Sin legendarios</option>
-          <option value="bst500">⚖️ Tope competitivo (BST ≤ 520)</option>
-          <option value="final">🔥 Pesos pesados (BST ≥ 470)</option>
-        </select>
-      </div>
-      <label class="flex items-center gap-2 cursor-pointer bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-        <input type="checkbox" id="eq" checked onchange="saveCfg()" class="w-4 h-4 accent-emerald-600" />
-        <span class="text-xs font-extrabold text-emerald-800">⚖️ Igualar equipos</span>
-      </label>
-    </div>
-    <div id="slots" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <button onclick="randomize()" class="btn px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-sm">🎲 Regiones al azar</button>
-        <div id="banner" class="hidden text-xs font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl"></div>
-      </div>
-      <button id="btn-start" onclick="start()" class="btn w-full sm:w-auto px-8 py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white fd font-bold text-base">
-        ⚔️ <span id="start-txt">¡INICIAR BATALLA!</span>
-      </button>
-    </div>
-    <div id="loading" class="hidden pt-2 border-t border-slate-100">
-      <div class="flex justify-between text-xs font-bold text-slate-600 mb-1"><span>Descargando datos oficiales…</span><span id="lpct">0%</span></div>
-      <div class="h-2 bg-slate-100 rounded-full overflow-hidden"><div id="lbar" class="h-full bg-gradient-to-r from-blue-500 via-red-500 to-amber-400" style="width:0%"></div></div>
-    </div>
-    <p class="text-xs text-slate-400">La batalla se abre en pantalla completa. Atajos: Espacio = pausa · Esc = salir.</p>
-  </section>
-</main>
-
-<!-- PANTALLA DE BATALLA (100%) -->
-<div id="battle" class="hidden fixed inset-0 z-50 bg-slate-100 select-none overflow-hidden">
-  <canvas id="cv" class="absolute inset-0 w-full h-full block cursor-crosshair"></canvas>
-  <div class="absolute top-0 inset-x-0 p-2 flex items-start justify-between gap-2 pointer-events-none">
-    <div id="hud" class="flex flex-wrap gap-1.5"></div>
-    <div class="bg-slate-900/85 text-white rounded-xl px-3 py-1 text-center">
-      <div id="timer" class="fd font-bold text-amber-400 tabular-nums">0.0s</div>
-      <div id="wx" class="text-[10px] font-bold text-cyan-300 empty:hidden"></div>
-    </div>
-    <div class="flex gap-1.5 pointer-events-auto">
-      <button id="bspd" onclick="cycleSpeed()" class="w-10 h-9 rounded-xl bg-slate-900/85 text-white text-xs font-extrabold" title="Velocidad">1x</button>
-      <button id="bpause" onclick="togglePause()" class="w-10 h-9 rounded-xl bg-slate-900/85 text-white" title="Pausa (Espacio)">⏸</button>
-      <button onclick="exitBattle()" class="w-10 h-9 rounded-xl bg-rose-600 text-white font-bold" title="Salir (Esc)">✕</button>
-    </div>
-  </div>
-  <div id="domb" class="absolute bottom-0 inset-x-0 h-1.5 flex"></div>
-  <div id="slow" class="hidden pointer-events-none absolute bottom-6 inset-x-0 text-center"><span id="slow-txt" class="bg-red-600/95 text-white fd font-bold text-xs px-4 py-1.5 rounded-full"></span></div>
-
-  <div id="insp" class="hidden absolute bottom-4 left-3 bg-slate-900/95 text-white rounded-2xl p-3 w-60 pop">
-    <div class="flex items-center gap-2">
-      <img id="i-img" src="" alt="" class="w-11 h-11 bg-slate-800 rounded-xl p-1" />
-      <div class="min-w-0 flex-1"><div id="i-name" class="fd font-bold text-sm truncate"></div><div id="i-info" class="text-[11px] text-slate-300"></div></div>
-      <button onclick="clearInsp()" class="text-slate-400 hover:text-white text-xs" aria-label="Cerrar">✕</button>
-    </div>
-    <div class="h-2 bg-slate-800 rounded-full overflow-hidden mt-2"><div id="i-bar" class="h-full bg-emerald-400" style="width:100%"></div></div>
-    <div class="flex justify-between text-[11px] mt-1.5"><span id="i-hp" class="text-slate-300"></span><span id="i-st"></span></div>
-  </div>
-
-  <div id="victory" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-5 text-center pop my-auto">
-      <h2 id="v-title" class="text-2xl sm:text-3xl font-bold uppercase"></h2>
-      <p id="v-stats" class="text-sm font-semibold text-slate-500 mt-1"></p>
-      <div id="v-top" class="mt-4 flex justify-center gap-2 flex-wrap"></div>
-      <div class="mt-5 flex flex-wrap justify-center gap-2.5">
-        <button id="btn-next" onclick="nextBattle()" class="btn px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white fd font-bold">⚔️ Revancha</button>
-        <button onclick="shareCard()" class="btn px-4 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm">📸 <span id="share-lbl">Guardar imagen</span></button>
-        <button onclick="openRanking()" class="btn px-4 py-3 rounded-2xl bg-amber-400 font-extrabold text-sm">🏆 Ranking</button>
-        <button onclick="exitBattle()" class="btn px-4 py-3 rounded-2xl bg-slate-200 font-extrabold text-sm">⚙️ Configurar</button>
+      <!-- Menú Colapsable Móvil -->
+      <div class="flex md:hidden items-center gap-1.5">
+        <button onclick="openRankingModal()" class="px-2.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs">🏆</button>
+        <button onclick="toggleMobileMenu()" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center gap-1">
+          <span>☰</span>
+          <span>Opciones</span>
+        </button>
       </div>
     </div>
+
+    <!-- Drawer Móvil Desplegable -->
+    <div id="mobile-menu" class="hidden md:hidden bg-slate-900 text-white px-4 py-3 border-t border-slate-800 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-xs font-bold">🔊 Volumen:</span>
+        <input type="range" min="0" max="100" value="55" oninput="updateVolume(this.value)" class="flex-1 accent-amber-400" />
+        <button onclick="toggleMusic()" id="btn-music-mobile" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700">🎵 Música ON</button>
+      </div>
+      <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+        <button onclick="openRankingModal(); toggleMobileMenu();" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold">🏆 Tabla Histórica</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 sm:gap-5">
+
+    <!-- PANEL DE CONFIGURACIÓN DE COMBATE -->
+    <section id="setup-panel" class="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
+      
+      <!-- Selector de Modo y Reglas de Balance -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Modo:</span>
+          <select id="battle-mode" onchange="onModeChange()" class="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none">
+            <option value="duel" selected>⚔️ Duelo Clásico (2 Regiones)</option>
+            <option value="royal">👑 Batalla Campal (4 Regiones)</option>
+            <option value="tournament">🏆 Torneo Eliminatorio (4 Regiones)</option>
+            <option value="mixed">🧬 Equipos Mixtos Aleatorios</option>
+          </select>
+
+          <select id="roster-filter" onchange="renderRegionPreviews()" class="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-bold text-slate-700 focus:outline-none">
+            <option value="all" selected>Filtro: Todos los Pokémon</option>
+            <option value="nolegend">🚫 Sin Legendarios / Singulares</option>
+            <option value="bst500">⚖️ Tope competitivo (BST ≤ 520)</option>
+            <option value="final">🔥 Solo Pesos Pesados (BST ≥ 470)</option>
+          </select>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+          <input type="checkbox" id="chk-balance" checked class="w-4 h-4 accent-emerald-600 rounded" />
+          <span class="text-xs font-extrabold text-emerald-800">⚖️ Igualar tamaño de equipos</span>
+        </label>
+      </div>
+
+      <!-- Tarjetas de Selección de Regiones con Vista Previa de Iniciales -->
+      <div id="regions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <!-- Equipo 1 -->
+        <div id="slot-card-0" class="bg-blue-50/70 border-2 border-blue-200 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span>●</span> Equipo 1
+              </span>
+              <span id="count-0" class="text-[11px] font-bold text-blue-700">151</span>
+            </div>
+            <select id="select-reg-0" onchange="renderRegionPreviews()" class="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs sm:text-sm">
+              <option value="kanto" selected>Kanto (Gen I)</option>
+              <option value="johto">Johto (Gen II)</option>
+              <option value="hoenn">Hoenn (Gen III)</option>
+              <option value="sinnoh">Sinnoh (Gen IV)</option>
+              <option value="unova">Unova (Gen V)</option>
+              <option value="kalos">Kalos (Gen VI)</option>
+              <option value="alola">Alola (Gen VII)</option>
+              <option value="galar">Galar (Gen VIII)</option>
+              <option value="paldea">Paldea (Gen IX)</option>
+            </select>
+          </div>
+          <div id="preview-0" class="mt-2.5 pt-2 border-t border-blue-200/70 flex items-center justify-around"></div>
+        </div>
+
+        <!-- Equipo 2 -->
+        <div id="slot-card-1" class="bg-rose-50/70 border-2 border-rose-200 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span>▲</span> Equipo 2
+              </span>
+              <span id="count-1" class="text-[11px] font-bold text-rose-700">100</span>
+            </div>
+            <select id="select-reg-1" onchange="renderRegionPreviews()" class="w-full bg-white border border-rose-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs sm:text-sm">
+              <option value="kanto">Kanto (Gen I)</option>
+              <option value="johto" selected>Johto (Gen II)</option>
+              <option value="hoenn">Hoenn (Gen III)</option>
+              <option value="sinnoh">Sinnoh (Gen IV)</option>
+              <option value="unova">Unova (Gen V)</option>
+              <option value="kalos">Kalos (Gen VI)</option>
+              <option value="alola">Alola (Gen VII)</option>
+              <option value="galar">Galar (Gen VIII)</option>
+              <option value="paldea">Paldea (Gen IX)</option>
+            </select>
+          </div>
+          <div id="preview-1" class="mt-2.5 pt-2 border-t border-rose-200/70 flex items-center justify-around"></div>
+        </div>
+
+        <!-- Equipo 3 -->
+        <div id="slot-card-2" class="hidden bg-emerald-50/70 border-2 border-emerald-200 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span>■</span> Equipo 3
+              </span>
+              <span id="count-2" class="text-[11px] font-bold text-emerald-700">135</span>
+            </div>
+            <select id="select-reg-2" onchange="renderRegionPreviews()" class="w-full bg-white border border-emerald-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs sm:text-sm">
+              <option value="kanto">Kanto (Gen I)</option>
+              <option value="johto">Johto (Gen II)</option>
+              <option value="hoenn" selected>Hoenn (Gen III)</option>
+              <option value="sinnoh">Sinnoh (Gen IV)</option>
+              <option value="unova">Unova (Gen V)</option>
+              <option value="kalos">Kalos (Gen VI)</option>
+              <option value="alola">Alola (Gen VII)</option>
+              <option value="galar">Galar (Gen VIII)</option>
+              <option value="paldea">Paldea (Gen IX)</option>
+            </select>
+          </div>
+          <div id="preview-2" class="mt-2.5 pt-2 border-t border-emerald-200/70 flex items-center justify-around"></div>
+        </div>
+
+        <!-- Equipo 4 -->
+        <div id="slot-card-3" class="hidden bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span>◆</span> Equipo 4
+              </span>
+              <span id="count-3" class="text-[11px] font-bold text-amber-700">107</span>
+            </div>
+            <select id="select-reg-3" onchange="renderRegionPreviews()" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 font-bold text-slate-800 text-xs sm:text-sm">
+              <option value="kanto">Kanto (Gen I)</option>
+              <option value="johto">Johto (Gen II)</option>
+              <option value="hoenn">Hoenn (Gen III)</option>
+              <option value="sinnoh" selected>Sinnoh (Gen IV)</option>
+              <option value="unova">Unova (Gen V)</option>
+              <option value="kalos">Kalos (Gen VI)</option>
+              <option value="alola">Alola (Gen VII)</option>
+              <option value="galar">Galar (Gen VIII)</option>
+              <option value="paldea">Paldea (Gen IX)</option>
+            </select>
+          </div>
+          <div id="preview-3" class="mt-2.5 pt-2 border-t border-amber-200/70 flex items-center justify-around"></div>
+        </div>
+      </div>
+
+      <!-- Barra de Acción y Estado de Torneo -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+        <div id="tournament-banner" class="hidden text-xs font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-3.5 py-2 rounded-xl">
+          🏆 Torneo: Semifinal 1 en espera
+        </div>
+        <div class="flex items-center gap-2.5 w-full sm:w-auto sm:ml-auto justify-end">
+          <button id="btn-reset" onclick="resetArena()" class="hidden btn-arcade px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm cursor-pointer">
+            🔄 Reiniciar
+          </button>
+          <button id="btn-start" onclick="handleStartClick()" class="btn-arcade w-full sm:w-auto px-7 py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-display font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 cursor-pointer">
+            <span>⚔️</span>
+            <span id="btn-start-text">¡INICIAR BATALLA!</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Progreso PokéAPI -->
+      <div id="loading-bar-wrapper" class="hidden pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1">
+          <span id="loading-text">Descargando nombres en español y estadísticas oficiales...</span>
+          <span id="loading-percent">0%</span>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="loading-bar" class="h-full bg-gradient-to-r from-blue-500 via-red-500 to-amber-400 transition-all duration-150" style="width: 0%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARENA DE COMBATE (Se expande a Pantalla Completa al iniciar) -->
+    <section id="arena-section" class="relative bg-white rounded-3xl border-2 border-slate-200 shadow-md overflow-hidden flex flex-col">
+      
+      <!-- HUD SUPERIOR DE EQUIPOS, RELOJ Y CLIMA -->
+      <div class="bg-slate-900 text-white px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+        <!-- Marcadores dinámicos por equipo -->
+        <div id="hud-teams-container" class="flex flex-wrap items-center gap-2 sm:gap-4"></div>
+
+        <!-- Controles centrales y botón salir de pantalla completa -->
+        <div class="flex items-center gap-2 ml-auto">
+          <div class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-xl text-center">
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Tiempo</div>
+            <div id="hud-timer" class="font-display font-extrabold text-sm sm:text-base text-amber-400 tabular-nums">00.0s</div>
+          </div>
+
+          <div id="weather-badge" class="hidden bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-xl text-center">
+            <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Evento Arena</div>
+            <div id="weather-label" class="text-[11px] font-extrabold text-cyan-300">Despejado</div>
+          </div>
+
+          <button id="btn-exit-fullscreen" onclick="exitFullscreenArena()" class="hidden px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs items-center gap-1.5 cursor-pointer transition shadow">
+            <span>✕</span>
+            <span>Salir Pantalla Completa</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra Multi-Dominio -->
+      <div id="dominance-bar-container" class="w-full h-2 bg-slate-800 flex overflow-hidden shrink-0"></div>
+
+      <!-- LIENZO PRINCIPAL -->
+      <div class="relative w-full h-[520px] sm:h-[600px] bg-slate-50 select-none overflow-hidden" id="canvas-container">
+        <canvas id="battle-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- Viñeta de Cámara Lenta / Enfoque Final -->
+        <div id="slowmo-overlay" class="hidden pointer-events-none absolute inset-0 slowmo-vignette flex items-start justify-center pt-4 z-20">
+          <span id="slowmo-badge-text" class="bg-red-600/95 text-white font-display font-extrabold text-xs sm:text-sm uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-red-300">
+            ⚡ CÁMARA LENTA • RECTA FINAL ⚡
+          </span>
+        </div>
+
+        <!-- Líder MVP en Vivo (Arriba Izquierda) -->
+        <div id="live-mvp-badge" class="hidden pointer-events-none absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md text-white border border-amber-400/60 px-3 py-1.5 rounded-2xl shadow-lg flex items-center gap-2">
+          <span class="text-base">👑</span>
+          <div>
+            <div class="text-[9px] uppercase tracking-wider text-amber-300 font-extrabold">Líder MVP en Vivo</div>
+            <div id="live-mvp-text" class="text-xs font-extrabold capitalize">Charizard • 4 KO</div>
+          </div>
+        </div>
+
+        <!-- Feed de Eliminaciones en Vivo (Arriba Derecha) -->
+        <div id="kill-feed" class="pointer-events-none absolute top-3 right-3 z-20 flex flex-col gap-1.5 max-w-[215px] sm:max-w-xs"></div>
+
+        <!-- Tarjeta Flotante al Tocar un Pokémon -->
+        <div id="inspector-card" class="hidden absolute bottom-4 left-4 z-30 bg-slate-900/95 backdrop-blur-md text-white border border-slate-700 rounded-2xl p-3.5 w-64 sm:w-72 shadow-xl animate-pop">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <img id="insp-sprite" src="" alt="" class="w-12 h-12 object-contain bg-slate-800 rounded-xl p-1" />
+              <div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span id="insp-name" class="font-display font-extrabold text-sm capitalize">Pikachu</span>
+                  <span id="insp-role" class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">VELOZ</span>
+                </div>
+                <div id="insp-types" class="text-[11px] text-slate-300 capitalize mt-0.5">Eléctrico</div>
+                <div id="insp-skill" class="text-[10px] text-cyan-300 font-bold mt-0.5">Habilidad: Rayo Paralizante</div>
+              </div>
+            </div>
+            <button onclick="clearInspectedPokemon()" class="text-slate-400 hover:text-white text-xs font-bold px-1.5 py-0.5">✕</button>
+          </div>
+          <div class="mt-2.5">
+            <div class="flex justify-between text-[11px] font-bold mb-1">
+              <span class="text-slate-400">PS Restantes</span>
+              <span id="insp-hp-text" class="text-emerald-400">120 / 120</span>
+            </div>
+            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div id="insp-hp-bar" class="h-full bg-emerald-400 transition-all duration-150" style="width: 100%"></div>
+            </div>
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-800 text-[11px]">
+              <span class="text-slate-400">Eliminaciones: <strong id="insp-kills" class="text-amber-400">0</strong></span>
+              <span id="insp-status" class="text-emerald-400 font-bold">Estado: Normal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leyenda Inferior -->
+        <div class="pointer-events-none absolute bottom-3 right-3 z-10 bg-white/90 backdrop-blur-sm border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-slate-600 hidden sm:flex items-center gap-2.5">
+          <span>🛡️ Tanque</span>
+          <span>⚡ Velocista</span>
+          <span>🎯 Francotirador</span>
+          <span class="text-slate-300">|</span>
+          <span class="text-slate-800 font-bold">Toca un Pokémon para seguirlo</span>
+        </div>
+
+        <!-- Pantalla Inicial -->
+        <div id="idle-overlay" class="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px] flex items-center justify-center p-4 z-20">
+          <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md text-center shadow-2xl border border-slate-100 animate-pop">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-red-50 border-2 border-red-200 flex items-center justify-center text-3xl">
+              🏟️
+            </div>
+            <h2 class="font-display font-extrabold text-2xl text-slate-900">Estadio Pokémon Listo</h2>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Combates tácticos en pantalla completa con cámara lenta dinámica, enfoque en grupos pequeños y celebración final de ganadores.
+            </p>
+            <button onclick="handleStartClick()" class="btn-arcade mt-5 w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-display font-extrabold text-base tracking-wide cursor-pointer">
+              ¡COMENZAR BATALLA!
+            </button>
+          </div>
+        </div>
+
+        <!-- PANTALLA DE VICTORIA, CARRUSEL FLUIDO, GRÁFICA Y TARJETA COMPARTIBLE -->
+        <div id="victory-overlay" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-30 overflow-y-auto">
+          <div class="bg-white rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border-2 border-amber-300 text-center animate-pop my-auto">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span id="victory-badge" class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                🏆 REGIÓN CAMPEONA
+              </span>
+              <button onclick="shareBattleCard()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition">
+                <span>📸</span>
+                <span id="btn-share-label">Descargar / Compartir Resultado</span>
+              </button>
+            </div>
+
+            <h2 id="victory-title" class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2 uppercase">
+              ¡KANTO GANA LA BATALLA!
+            </h2>
+            <p id="victory-stats" class="text-xs sm:text-sm font-semibold text-slate-500 mt-0.5">
+              Duración: 34.2s • Sobrevivientes: 18 • Índice Justo: 14.8 pts
+            </p>
+
+            <!-- Carrusel Fluido sin parpadeos -->
+            <div class="mt-3 bg-slate-50 rounded-2xl border border-slate-200/80 pt-2.5 pb-1.5 px-3">
+              <div class="flex items-center justify-between px-2">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">⭐ Destacados del Equipo Campeón</span>
+                <div class="flex gap-1.5">
+                  <button onclick="stepCarousel(-1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs">◀</button>
+                  <button onclick="stepCarousel(1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs">▶</button>
+                </div>
+              </div>
+              <div id="carousel-track" class="carousel-stage w-full overflow-hidden"></div>
+            </div>
+
+            <!-- Gráfica de Ritmo de Bajas por Intervalo -->
+            <div class="mt-3 bg-slate-50 rounded-2xl border border-slate-200/80 p-3 text-left">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">📊 Ritmo de Eliminaciones en el Combate</span>
+                <span id="kills-per-min-label" class="text-[11px] font-extrabold text-blue-600">0 bajas/min</span>
+              </div>
+              <canvas id="kill-chart-canvas" height="65" class="w-full h-16 block"></canvas>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <button id="btn-next-round" onclick="handleStartClick()" class="btn-arcade px-6 py-3 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-display font-extrabold text-sm sm:text-base cursor-pointer">
+                ⚔️ Siguiente Combate
+              </button>
+              <button onclick="openRankingModal()" class="btn-arcade px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm cursor-pointer">
+                🏆 Ver Ranking
+              </button>
+              <button onclick="exitFullscreenArena()" class="btn-arcade px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-sm cursor-pointer">
+                ⚙️ Configurar Equipos
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE RANKING JUSTO NORMALIZADO -->
+  <div id="ranking-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 animate-pop">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-2">
+        <div>
+          <h3 class="font-display font-extrabold text-xl text-slate-900 flex items-center gap-2">
+            <span>🏆</span> Ranking Histórico Justo
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Normalizado por tamaño de equipo, % de sobrevivientes y tiempo total (menor índice = victoria más dominante).
+          </p>
+        </div>
+        <button onclick="closeRankingModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold">✕</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto flex-1">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-100 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+              <th class="py-2 px-3">#</th>
+              <th class="py-2 px-3">Campeón</th>
+              <th class="py-2 px-3">Formato</th>
+              <th class="py-2 px-3">Tiempo</th>
+              <th class="py-2 px-3">Vivos</th>
+              <th class="py-2 px-3">MVP</th>
+              <th class="py-2 px-3 text-right">Índice</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm font-semibold text-slate-700"></tbody>
+        </table>
+        <div id="ranking-empty" class="hidden text-center py-10 text-slate-400 text-sm">
+          Aún no hay combates registrados.
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex justify-between items-center">
+        <button onclick="clearLeaderboard()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-50">
+          🗑️ Limpiar historial
+        </button>
+        <button onclick="closeRankingModal()" class="btn-arcade px-5 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs sm:text-sm">
+          Cerrar
+        </button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- RANKING -->
-<div id="rank" class="hidden fixed inset-0 bg-slate-950/75 z-[60] flex items-center justify-center p-4">
-  <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col pop">
-    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-      <div><h3 class="fd font-bold text-xl">🏆 Ranking histórico</h3><p class="text-xs text-slate-500">Menor índice = victoria más dominante.</p></div>
-      <button onclick="closeRanking()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold" aria-label="Cerrar">✕</button>
-    </div>
-    <div class="p-3 overflow-y-auto flex-1">
-      <table class="w-full text-left text-sm font-semibold">
-        <thead><tr class="text-[11px] text-slate-400 border-b-2 border-slate-100"><th class="p-2">#</th><th class="p-2">Campeón</th><th class="p-2">Formato</th><th class="p-2">Tiempo</th><th class="p-2">Vivos</th><th class="p-2">MVP</th><th class="p-2 text-right">Índice</th></tr></thead>
-        <tbody id="rk-body" class="divide-y divide-slate-100"></tbody>
-      </table>
-      <p id="rk-empty" class="hidden text-center py-10 text-slate-400 text-sm">Aún no hay combates registrados.</p>
-    </div>
-    <div class="p-3 bg-slate-50 rounded-b-3xl flex justify-between">
-      <button onclick="clearRanking()" class="text-xs font-bold text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-50">🗑️ Limpiar</button>
-      <button onclick="closeRanking()" class="btn px-5 py-2 rounded-xl bg-slate-900 text-white font-bold text-sm">Cerrar</button>
-    </div>
-  </div>
-</div>
+  <!-- CANVAS CONFETI SUPERIOR -->
+  <canvas id="confetti-canvas" class="pointer-events-none fixed inset-0 z-[70]"></canvas>
 
-<script>
-const $=id=>document.getElementById(id);
-const spr=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-const REG={kanto:['Kanto',1,151,[1,4,7]],johto:['Johto',152,251,[152,155,158]],hoenn:['Hoenn',252,386,[252,255,258]],sinnoh:['Sinnoh',387,493,[387,390,393]],unova:['Unova',494,649,[495,498,501]],kalos:['Kalos',650,721,[650,653,656]],alola:['Alola',722,809,[722,725,728]],galar:['Galar',810,898,[810,813,816]],paldea:['Paldea',906,1025,[906,909,912]]};
-const GEN=['I','II','III','IV','V','VI','VII','VIII','IX'];
-const LEG=new Set([144,145,146,150,151,243,244,245,249,250,251,377,378,379,380,381,382,383,384,385,386,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,638,639,640,641,642,643,644,645,646,647,648,649,716,717,718,719,720,721,785,786,787,788,789,790,791,792,800,801,802,807,808,809,888,889,890,891,892,893,894,895,896,897,898,905,1001,1002,1003,1004,1007,1008,1014,1015,1016,1017,1024,1025]);
-const TES={normal:'Normal',fire:'Fuego',water:'Agua',electric:'Eléctrico',grass:'Planta',ice:'Hielo',fighting:'Lucha',poison:'Veneno',ground:'Tierra',flying:'Volador',psychic:'Psíquico',bug:'Bicho',rock:'Roca',ghost:'Fantasma',dragon:'Dragón',dark:'Siniestro',steel:'Acero',fairy:'Hada'};
-const TC={normal:'#A8A77A',fire:'#EE8130',water:'#6390F0',electric:'#F7D02C',grass:'#7AC74C',ice:'#96D9D6',fighting:'#C22E28',poison:'#A33EA1',ground:'#E2BF65',flying:'#A98FF3',psychic:'#F95587',bug:'#A6B91A',rock:'#B6A136',ghost:'#735797',dragon:'#6F35FC',dark:'#705746',steel:'#B7B7CE',fairy:'#D685AD'};
-const SK={fire:['Llamarada Ígnea',75,'burn'],electric:['Chispa Paralizante',72,'para'],grass:['Síntesis Vital',68,'heal'],water:['Hidropulso',72,'aoe'],ice:['Ventisca Helada',74,'aoe'],fighting:['Puño Certero',80,'pierce'],steel:['Cabeza de Hierro',76,'pierce'],dragon:['Cometa Draco',85,'aoe'],fairy:['Brillo Mágico',75,'heal'],psychic:['Psicocarga',76,'pierce'],poison:['Bomba Lodo',65,'burn'],ground:['Terremoto',78,'aoe'],rock:['Avalancha',72,'aoe'],ghost:['Bola Sombra',74,'pierce'],dark:['Pulso Umbrío',72,'para'],flying:['Tajo Aéreo',68,'para'],bug:['Zumbido',62,'heal'],normal:['Golpe Cuerpo',60,'para']};
-const CH={normal:{rock:.5,ghost:0,steel:.5},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{fire:.5,water:.5,grass:2,ice:.5,ground:2,flying:2,dragon:2,steel:.5},fighting:{normal:2,ice:2,poison:.5,flying:.5,psychic:.5,bug:.5,rock:2,ghost:0,dark:2,steel:2,fairy:.5},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0,fairy:2},ground:{fire:2,electric:2,grass:.5,poison:2,flying:0,bug:.5,rock:2,steel:2},flying:{electric:.5,grass:2,fighting:2,bug:2,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{fire:.5,grass:2,fighting:.5,poison:.5,flying:.5,psychic:2,ghost:.5,dark:2,steel:.5,fairy:.5},rock:{fire:2,ice:2,fighting:.5,ground:.5,flying:2,bug:2,steel:.5},ghost:{normal:0,psychic:2,ghost:2,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{fighting:.5,psychic:2,ghost:2,dark:.5,fairy:.5},steel:{fire:.5,water:.5,electric:.5,ice:2,rock:2,steel:.5,fairy:2},fairy:{fire:.5,fighting:2,poison:.5,dragon:2,dark:2,steel:.5}};
-const TEAMS=[{h:'#2563eb',s:'●',c:'blue'},{h:'#e11d48',s:'▲',c:'rose'},{h:'#059669',s:'■',c:'emerald'},{h:'#d97706',s:'◆',c:'amber'}];
-const eff=(a,d)=>d.reduce((m,t)=>m*(CH[a]&&CH[a][t]!==undefined?CH[a][t]:1),1);
+  <script>
+    /* ==========================================================================
+       1. REGIONES, INICIALES, LEGENDARIOS Y TRADUCCIÓN AL ESPAÑOL
+       ========================================================================== */
+    const REGIONS = {
+      kanto:  { name: 'Kanto',  start: 1,   end: 151,  starters: [1, 4, 7] },
+      johto:  { name: 'Johto',  start: 152, end: 251,  starters: [152, 155, 158] },
+      hoenn:  { name: 'Hoenn',  start: 252, end: 386,  starters: [252, 255, 258] },
+      sinnoh: { name: 'Sinnoh', start: 387, end: 493,  starters: [387, 390, 393] },
+      unova:  { name: 'Unova',  start: 494, end: 649,  starters: [495, 498, 501] },
+      kalos:  { name: 'Kalos',  start: 650, end: 721,  starters: [650, 653, 656] },
+      alola:  { name: 'Alola',  start: 722, end: 809,  starters: [722, 725, 728] },
+      galar:  { name: 'Galar',  start: 810, end: 898,  starters: [810, 813, 816] },
+      paldea: { name: 'Paldea', start: 906, end: 1025, starters: [906, 909, 912] }
+    };
 
-/* ---------- AUDIO ---------- */
-const audio={on:true,music:true,vol:.55,ctx:null,iv:null,step:0};
-function initAudio(){if(!audio.ctx)audio.ctx=new(window.AudioContext||window.webkitAudioContext)();if(audio.ctx.state==='suspended')audio.ctx.resume()}
-function tone(f,type='sine',d=.09,g=1){if(!audio.on||audio.vol<=0)return;try{initAudio();const c=audio.ctx,o=c.createOscillator(),n=c.createGain();o.type=type;o.frequency.value=f;n.gain.setValueAtTime(.08*audio.vol*g,c.currentTime);n.gain.exponentialRampToValueAtTime(.0008,c.currentTime+d);o.connect(n);n.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
-function toggleAudio(){audio.on=!audio.on;$('btn-sound').textContent=audio.on?'🔊':'🔇'}
-function toggleMusic(){audio.music=!audio.music;$('btn-music').textContent=audio.music?'🎵 ON':'🎵 OFF';audio.music?(sim.running&&startMusic()):stopMusic()}
-function startMusic(){stopMusic();if(!audio.music)return;const b=[110,110,130.81,146.83,110,110,164.81,146.83],h=[220,261.63,293.66,329.63,220,293.66,349.23,392];audio.iv=setInterval(()=>{if(!sim.running||sim.paused)return;const s=sim.slowOn?h:b;tone(s[audio.step++%8],sim.slowOn?'sawtooth':'triangle',.16,.45)},240)}
-function stopMusic(){clearInterval(audio.iv);audio.iv=null}
+    const LEGENDARY_IDS = new Set([
+      144,145,146,150,151, 243,244,245,249,250,251,
+      377,378,379,380,381,382,383,384,385,386,
+      480,481,482,483,484,485,486,487,488,489,490,491,492,493,
+      494,638,639,640,641,642,643,644,645,646,647,648,649,
+      716,717,718,719,720,721,
+      772,773,793,794,795,796,797,798,799,
+      984,985,986,987,988,989,990,991,992,993,994,995,1005,1006,1009,1010,1020,1021,1022,1023,
+      785,786,787,788,789,790,791,792,800,801,802,807,808,809,
+      888,889,890,891,892,893,894,895,896,897,898,
+      905,1001,1002,1003,1004,1007,1008,1014,1015,1016,1017,1024,1025
+    ]);
 
-/* ---------- DATOS (con caché local) ---------- */
-const cache=new Map(),sprites=new Map();
-try{JSON.parse(localStorage.getItem('pk_cache_v1')||'[]').forEach(([k,v])=>cache.set(k,v))}catch(e){}
-const OVR={'nidoran-f':'Nidoran♀','nidoran-m':'Nidoran♂','mr-mime':'Mr. Mime','ho-oh':'Ho-Oh','type-null':'Código Cero'};
-const fmt=n=>OVR[n]||n.split('-').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
-function sprite(id){if(!sprites.has(id)){const i=new Image();i.crossOrigin='anonymous';i.src=spr(id);sprites.set(id,i)}return sprites.get(id)}
-async function fetchPoke(id){
-  if(cache.has(id)){sprite(id);return cache.get(id)}
-  let p;
-  try{const d=await(await fetch('https://pokeapi.co/api/v2/pokemon/'+id)).json();const s={};d.stats.forEach(x=>s[x.stat.name]=x.base_stat);
-    p={id:d.id,name:fmt(d.name),types:d.types.map(t=>t.type.name),hp:s.hp,atk:s.attack,def:s.defense,spa:s['special-attack'],spd:s['special-defense'],spe:s.speed};
-    p.bst=p.hp+p.atk+p.def+p.spa+p.spd+p.spe;cache.set(id,p)}
-  catch(e){p={id,name:'Pokémon #'+id,types:['normal'],hp:65,atk:65,def:65,spa:65,spd:65,spe:65,bst:390}}
-  p.leg=LEG.has(p.id);sprite(id);return p}
-async function loadRoster(key,filter,prog){
-  const [,a,b]=REG[key],ids=[];for(let i=a;i<=b;i++)ids.push(i);const out=[];
-  for(let i=0;i<ids.length;i+=30){const r=await Promise.all(ids.slice(i,i+30).map(fetchPoke));out.push(...r);prog(r.length)}
-  return out.filter(p=>!(filter==='nolegend'&&p.leg)&&!(filter==='bst500'&&p.bst>520)&&!(filter==='final'&&p.bst<470))}
+    const TYPE_ES = {
+      normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Eléctrico',
+      grass: 'Planta', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
+      ground: 'Tierra', flying: 'Volador', psychic: 'Psíquico', bug: 'Bicho',
+      rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón', dark: 'Siniestro',
+      steel: 'Acero', fairy: 'Hada'
+    };
 
-/* ---------- CONFIGURACIÓN ---------- */
-const opts=Object.keys(REG).map((k,i)=>`<option value="${k}">${REG[k][0]} (Gen ${GEN[i]})</option>`).join('');
-$('slots').innerHTML=TEAMS.map((t,i)=>`<div id="slot-${i}" class="bg-${t.c}-50 border-2 border-${t.c}-200 rounded-2xl p-3 flex flex-col gap-2"><div class="flex justify-between text-xs font-extrabold text-${t.c}-700"><span>${t.s} Equipo ${i+1}</span><span id="cnt-${i}"></span></div><select id="sel-${i}" onchange="renderPreviews();saveCfg()" class="w-full bg-white border border-${t.c}-300 rounded-xl px-3 py-2 font-bold text-sm" aria-label="Región equipo ${i+1}">${opts}</select><div id="pv-${i}" class="flex justify-around border-t border-${t.c}-200 pt-2"></div></div>`).join('');
-const tour={active:false,round:0,regions:[],finalists:[]};
-function renderPreviews(){
-  const m=$('mode').value,n=(m==='royal'||m==='tournament')?4:2;
-  for(let i=0;i<4;i++){const c=$('slot-'+i);c.classList.toggle('hidden',i>=n);if(i>=n)continue;
-    const r=REG[$('sel-'+i).value];$('cnt-'+i).textContent=(r[2]-r[1]+1)+' Poké';
-    $('pv-'+i).innerHTML=r[3].map(s=>`<img src="${spr(s)}" class="w-11 h-11 object-contain" alt="" loading="lazy" />`).join('')}}
-function onMode(){
-  const t=$('mode').value==='tournament';tour.active=t;tour.round=0;tour.finalists=[];
-  $('banner').classList.toggle('hidden',!t);$('banner').textContent='🏆 Semifinal 1 (Equipo 1 vs Equipo 2)';
-  $('start-txt').textContent=t?'JUGAR SEMIFINAL 1':'¡INICIAR BATALLA!';renderPreviews();saveCfg()}
-function randomize(){const k=Object.keys(REG).sort(()=>Math.random()-.5);for(let i=0;i<4;i++)$('sel-'+i).value=k[i];renderPreviews();saveCfg()}
-function saveCfg(){try{localStorage.setItem('pk_cfg',JSON.stringify({m:$('mode').value,f:$('filter').value,e:$('eq').checked,r:[0,1,2,3].map(i=>$('sel-'+i).value)}))}catch(e){}}
-function loadCfg(){
-  const defs=['kanto','johto','hoenn','sinnoh'];[0,1,2,3].forEach(i=>$('sel-'+i).value=defs[i]);
-  try{const c=JSON.parse(localStorage.getItem('pk_cfg')||'null');if(c){$('mode').value=c.m;$('filter').value=c.f;$('eq').checked=c.e;c.r.forEach((v,i)=>$('sel-'+i).value=v)}}catch(e){}
-  onMode()}
+    const TYPE_COLORS = {
+      normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C',
+      grass: '#7AC74C', ice: '#96D9D6', fighting: '#C22E28', poison: '#A33EA1',
+      ground: '#E2BF65', flying: '#A98FF3', psychic: '#F95587', bug: '#A6B91A',
+      rock: '#B6A136', ghost: '#735797', dragon: '#6F35FC', dark: '#705746',
+      steel: '#B7B7CE', fairy: '#D685AD'
+    };
 
-/* ---------- ESTADO Y PANTALLA ---------- */
-const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
-const sim={running:false,paused:false,speed:1,t:0,last:0,F:[],proj:[],parts:[],texts:[],heals:[],kills:[],weather:'clear',wt:11,cam:{x:0,y:0,z:1,tx:0,ty:0,tz:1},insp:null,slowOn:false,names:[],keys:[],pend:null,showT:0};
-function resizeCanvas(){const d=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d}
-function openBattle(){$('battle').classList.remove('hidden');document.body.style.overflow='hidden';
-  if(document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});resizeCanvas()}
-function exitBattle(){sim.running=false;sim.paused=false;stopMusic();$('battle').classList.add('hidden');$('victory').classList.add('hidden');document.body.style.overflow='';
-  if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}
-function nextBattle(){exitBattle();start()}
-function togglePause(){if(!sim.running||sim.showT>0)return;sim.paused=!sim.paused;$('bpause').textContent=sim.paused?'▶':'⏸'}
-function cycleSpeed(){sim.speed=sim.speed===1?2:(sim.speed===2?4:1);$('bspd').textContent=sim.speed+'x'}
-window.addEventListener('resize',()=>{if(!$('battle').classList.contains('hidden')){resizeCanvas();if(!sim.running)render()}});
-document.addEventListener('keydown',e=>{
-  if(!$('rank').classList.contains('hidden')){if(e.key==='Escape')closeRanking();return}
-  if($('battle').classList.contains('hidden'))return;
-  if(e.code==='Space'){e.preventDefault();togglePause()}else if(e.key==='Escape')exitBattle()});
+    const TYPE_SKILLS = {
+      fire:     { name: 'Llamarada Ígnea', power: 75, effect: 'burn',   desc: 'Quema al rival' },
+      electric: { name: 'Chispa Paralizante', power: 72, effect: 'para', desc: 'Paraliza y frena' },
+      grass:    { name: 'Síntesis Vital', power: 68, effect: 'heal',   desc: 'Drena PS al golpear' },
+      water:    { name: 'Hidropulso Expansivo', power: 72, effect: 'aoe', desc: 'Daño en área' },
+      ice:      { name: 'Ventisca Helada', power: 74, effect: 'aoe',    desc: 'Daño en área' },
+      fighting: { name: 'Puño Certero', power: 80, effect: 'pierce', desc: 'Perfora defensa' },
+      steel:    { name: 'Cabeza de Hierro', power: 76, effect: 'pierce', desc: 'Ignora 35% defensa' },
+      dragon:   { name: 'Cometa Draco', power: 85, effect: 'aoe',    desc: 'Impacto expansivo' },
+      fairy:    { name: 'Brillo Mágico', power: 75, effect: 'heal',   desc: 'Cura aliados cercanos' },
+      psychic:  { name: 'Psicocarga', power: 76, effect: 'pierce', desc: 'Golpe mental directo' },
+      poison:   { name: 'Bomba Lodo', power: 65, effect: 'burn',   desc: 'Intoxica en el tiempo' },
+      ground:   { name: 'Terremoto', power: 78, effect: 'aoe',    desc: 'Onda sísmica' },
+      rock:     { name: 'Avalancha', power: 72, effect: 'aoe',    desc: 'Rocas en área' },
+      ghost:    { name: 'Bola Sombra', power: 74, effect: 'pierce', desc: 'Atraviesa escudos' },
+      dark:     { name: 'Pulso Umbrío', power: 72, effect: 'para',   desc: 'Frena al rival' },
+      flying:   { name: 'Tajo Aéreo', power: 68, effect: 'para',   desc: 'Frena al rival' },
+      bug:      { name: 'Zumbido', power: 62, effect: 'heal',   desc: 'Absorbe energía' },
+      normal:   { name: 'Golpe Cuerpo', power: 60, effect: 'para',   desc: 'Puede paralizar' }
+    };
 
-/* ---------- COMBATIENTES ---------- */
-function role(p){const bulk=p.hp+p.def+p.spd;if(p.spe>=95&&p.spe>=p.spa)return'speedster';if(p.spa>=90&&p.spa>p.atk)return'sniper';if(bulk>=245)return'tank';return p.spa>p.atk?'sniper':'speedster'}
-function mkFighter(p,ti,nt){
-  const r=role(p);let x,y;
-  if(nt===2){x=ti===0?55+Math.random()*W*.28:W-55-Math.random()*W*.28;y=55+Math.random()*(H-110)}
-  else{x=W*(ti%2?.82:.18)+(Math.random()-.5)*W*.22;y=H*(ti<2?.24:.76)+(Math.random()-.5)*H*.22}
-  const mh=Math.round((p.hp*2.3+95)*(r==='tank'?1.38:r==='sniper'?.92:1)),ai=['nearest','advantage','weakest'];
-  return{...p,uid:ti+'-'+p.id+'-'+Math.random().toString(36).slice(2,6),teamIdx:ti,role:r,skill:SK[p.types[0]]||SK.normal,ai:r==='sniper'?'advantage':ai[p.id%3],
-    x:Math.max(35,Math.min(W-35,x)),y:Math.max(35,Math.min(H-35,y)),maxHp:mh,hp:mh,alive:true,kills:0,cd:Math.random()*.9,scd:3+Math.random()*3,burn:0,para:0,flash:0,
-    radius:r==='tank'?19:15,range:r==='sniper'?210:(r==='speedster'?50:42),speed:(42+p.spe*.45)*(r==='speedster'?1.25:r==='tank'?.82:1)}}
+    const TYPE_CHART = {
+      normal:   { rock: 0.5, ghost: 0, steel: 0.5 },
+      fire:     { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+      water:    { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+      electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+      grass:    { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+      ice:      { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+      fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+      poison:   { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+      ground:   { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+      flying:   { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+      psychic:  { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+      bug:      { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+      rock:     { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+      ghost:    { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+      dragon:   { dragon: 2, steel: 0.5, fairy: 0 },
+      dark:     { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+      steel:    { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+      fairy:    { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 }
+    };
 
-async function start(){
-  initAudio();saveCfg();
-  const mode=$('mode').value,filter=$('filter').value,sel=[0,1,2,3].map(i=>$('sel-'+i).value);let keys;
-  if(mode==='tournament'){
-    if(!tour.active||tour.round===0){Object.assign(tour,{active:true,round:0,regions:sel,finalists:[]});keys=[sel[0],sel[1]]}
-    else keys=tour.round===1?[tour.regions[2],tour.regions[3]]:[tour.finalists[0],tour.finalists[1]]}
-  else keys=mode==='royal'?sel:sel.slice(0,2);
-  $('btn-start').disabled=true;$('loading').classList.remove('hidden');
-  const total=keys.reduce((a,k)=>a+REG[k][2]-REG[k][1]+1,0);let done=0;
-  const rosters=await Promise.all(keys.map(k=>loadRoster(k,filter,n=>{done+=n;const p=Math.min(100,Math.round(done/total*100));$('lbar').style.width=p+'%';$('lpct').textContent=p+'%'})));
-  try{localStorage.setItem('pk_cache_v1',JSON.stringify([...cache]))}catch(e){}
-  $('loading').classList.add('hidden');$('btn-start').disabled=false;
-  let rs=rosters,names=keys.map(k=>REG[k][0]);
-  if(mode==='mixed'){const pool=rosters.flat().sort(()=>Math.random()-.5),h=Math.floor(pool.length/2);rs=[pool.slice(0,h),pool.slice(h,h*2)];names=['Alianza Alfa','Alianza Omega']}
-  else if($('eq').checked){const m=Math.max(10,Math.min(...rosters.map(r=>r.length)));rs=rosters.map(r=>[...r].sort(()=>Math.random()-.5).slice(0,m))}
-  openBattle();
-  sim.F=[];rs.forEach((r,ti)=>r.forEach(p=>sim.F.push(mkFighter(p,ti,rs.length))));
-  Object.assign(sim,{names,keys,proj:[],parts:[],texts:[],heals:[],kills:[],t:0,weather:'clear',wt:11,insp:null,slowOn:false,showT:0,pend:null,paused:false,speed:1,running:true,last:performance.now()});
-  sim.cam={x:W/2,y:H/2,z:1,tx:W/2,ty:H/2,tz:1};
-  $('bspd').textContent='1x';$('bpause').textContent='⏸';$('victory').classList.add('hidden');$('insp').classList.add('hidden');$('slow').classList.add('hidden');$('wx').textContent='';
-  $('hud').innerHTML=names.map((n,i)=>`<div class="bg-slate-900/85 text-white rounded-xl px-2.5 py-1 flex items-center gap-1.5"><span style="color:${TEAMS[i].h}">${TEAMS[i].s}</span><span class="text-[11px] font-bold">${n}</span><span class="fd font-bold"><span id="al-${i}">${rs[i].length}</span><span class="text-[10px] text-slate-400">/${rs[i].length}</span></span></div>`).join('');
-  $('domb').innerHTML=names.map((_,i)=>`<div id="dm-${i}" style="background:${TEAMS[i].h};width:${100/names.length}%" class="h-full transition-all duration-300"></div>`).join('');
-  startMusic();requestAnimationFrame(loop)}
+    const SNIPER_DAMAGE_MULT = 0.8; // equilibrio: el rango largo compensa con menos daño
 
-/* ---------- COMBATE ---------- */
-function arenaEvent(){
-  if(Math.random()<.35){sim.heals.push({x:W*(.25+Math.random()*.5),y:H*(.25+Math.random()*.5),r:52,life:9});$('wx').textContent='💚 Zona curativa'}
-  else{const w=[['sun','☀️ Sol (+Fuego)'],['rain','🌧️ Lluvia (+Agua)'],['storm','⚡ Tormenta (+Eléctrico)'],['clear','']][Math.floor(Math.random()*4)];sim.weather=w[0];$('wx').textContent=w[1]}}
-function pickTarget(a,en){
-  if(!en.length)return null;let best=null,bs=-Infinity;
-  for(const e of en){const d=Math.hypot(e.x-a.x,e.y-a.y);
-    const s=a.ai==='nearest'?-d:(a.ai==='weakest'?(1-e.hp/e.maxHp)*140:(eff(a.types[0],e.types)-1)*120)-d*.35;
-    if(s>bs){bs=s;best=e}}
-  return best}
-function attack(a,t,en,al){
-  let bt=a.types[0],bm=eff(bt,t.types);
-  if(a.types[1]){const m=eff(a.types[1],t.types);if(m>bm){bt=a.types[1];bm=m}}
-  const sp=a.scd<=0,sk=a.skill;if(sp)a.scd=5.5;
-  const stab=bt===a.types[0]?1.5:1.25,wm=(sim.weather==='sun'&&bt==='fire')||(sim.weather==='rain'&&bt==='water')||(sim.weather==='storm'&&bt==='electric')?1.3:1;
-  let df=Math.max(t.def,t.spd);if(sp&&sk[2]==='pierce')df*=.65;
-  const dmg=Math.max(5,Math.round(Math.max(a.atk,a.spa)/df*(sk[1]*(sp?1.22:1)*.35)*stab*bm*wm*(.9+Math.random()*.2)));
-  const col=TC[bt]||'#38bdf8',fx=sp?sk[2]:null;
-  if(a.role==='sniper')sim.proj.push({x:a.x,y:a.y,t,a,dmg,m:bm,col,fx,en,al});else hit(a,t,dmg,bm,col,fx,en,al)}
-function hit(a,t,dmg,m,col,fx,en,al){
-  if(!t.alive)return;hurt(a,t,dmg,m,col);if(!fx)return;
-  if(fx==='burn')t.burn=3;else if(fx==='para')t.para=2.2;
-  else if(fx==='heal'){const h=Math.round(dmg*.45);a.hp=Math.min(a.maxHp,a.hp+h);for(const o of al)if(o.alive&&o!==a&&Math.hypot(o.x-a.x,o.y-a.y)<75)o.hp=Math.min(o.maxHp,o.hp+Math.round(h*.6))}
-  else if(fx==='aoe')for(const e of en)if(e.alive&&e!==t&&Math.hypot(e.x-t.x,e.y-t.y)<68)hurt(a,e,Math.round(dmg*.55),1,col)}
-function hurt(a,t,dmg,m,col){
-  if(!t.alive)return;t.hp-=dmg;t.flash=.14;const an=Math.atan2(t.y-a.y,t.x-a.x);t.x+=Math.cos(an)*4;t.y+=Math.sin(an)*4;
-  for(let i=0;i<5;i++){const g=Math.random()*6.283,s=28+Math.random()*65;sim.parts.push({x:t.x,y:t.y,vx:Math.cos(g)*s,vy:Math.sin(g)*s,life:.32,col:col||'#f59e0b'})}
-  if(sim.slowOn||(sim.insp&&sim.insp.uid===t.uid))sim.texts.push({x:t.x,y:t.y-18,txt:'-'+dmg,col:m>=2?'#dc2626':'#334155',life:.65});
-  if(t.hp<=0){t.hp=0;t.alive=false;a.kills++;sim.kills.push(sim.t);tone(m>=2?540:300,'triangle',.09,.7)}}
-function focus(sv){
-  const c=l=>({x:l.reduce((s,p)=>s+p.x,0)/l.length,y:l.reduce((s,p)=>s+p.y,0)/l.length});
-  if(sv.length<=4)return{...c(sv),z:1.85};
-  let best=null,bs=-1;
-  for(const an of sv){const n=sv.filter(o=>Math.hypot(o.x-an.x,o.y-an.y)<=180),tm=new Set(n.map(x=>x.teamIdx)).size;
-    if(n.length>=2&&n.length<=6&&tm>=2){const s=tm*10-n.length;if(s>bs){bs=s;best=n}}}
-  return best?{...c(best),z:1.65}:{...c(sv),z:1.42}}
+    const TEAM_STYLES = [
+      { name: 'Azul',  hex: '#2563eb', symbol: '●' },
+      { name: 'Rojo',  hex: '#e11d48', symbol: '▲' },
+      { name: 'Verde', hex: '#059669', symbol: '■' },
+      { name: 'Ámbar', hex: '#d97706', symbol: '◆' }
+    ];
 
-function update(raw){
-  const cam=sim.cam;
-  if(sim.showT>0){
-    sim.showT-=raw;const w=sim.pend.survivors;
-    if(w.length){cam.tx=w.reduce((s,p)=>s+p.x,0)/w.length;cam.ty=w.reduce((s,p)=>s+p.y,0)/w.length;cam.tz=w.length===1?2.25:(w.length<=4?1.85:1.55)}
-    for(const p of w)p.y+=Math.sin(sim.showT*14+p.id)*.45;
-    for(const k of['x','y','z'])cam[k]+=(cam['t'+k]-cam[k])*.08;
-    if(sim.showT<=0){const{idx,survivors}=sim.pend;sim.pend=null;finish(idx,survivors)}return}
-  const byTeam=sim.names.map((_,i)=>sim.F.filter(f=>f.alive&&f.teamIdx===i));
-  if(byTeam.filter(a=>a.length).length<=1){
-    const idx=Math.max(0,byTeam.findIndex(a=>a.length));sim.showT=2.8;sim.pend={idx,survivors:byTeam[idx]||[]};
-    $('slow').classList.remove('hidden');$('slow-txt').textContent='🏆 ¡Victoria de '+sim.names[idx]+'!';return}
-  const sv=sim.F.filter(f=>f.alive),n=sv.length,few=n<=12,fin=n<=4;
-  if(few&&!sim.slowOn){sim.slowOn=true;$('slow').classList.remove('hidden')}
-  if(sim.slowOn)$('slow-txt').textContent=fin?'⚡ Duelo final':'🎬 Quedan '+n;
-  const dt=Math.min(raw,.05)*(fin?.35:few?.5:1)*sim.speed;sim.t+=dt;
-  if((sim.wt-=dt)<=0){arenaEvent();sim.wt=14}
-  for(let i=sim.heals.length-1;i>=0;i--){const h=sim.heals[i];if((h.life-=dt)<=0){sim.heals.splice(i,1);continue}
-    for(const f of sim.F)if(f.alive&&Math.hypot(f.x-h.x,f.y-h.y)<h.r)f.hp=Math.min(f.maxHp,f.hp+16*dt)}
-  for(const f of sim.F){
-    if(!f.alive)continue;
-    f.flash-=dt;f.cd-=dt;f.scd-=dt;f.para-=dt;
-    if(f.burn>0){f.burn-=dt;f.hp-=11*dt;if(f.hp<=0){f.hp=0;f.alive=false;continue}}
-    const en=sim.F.filter(o=>o.alive&&o.teamIdx!==f.teamIdx),al=byTeam[f.teamIdx],t=pickTarget(f,en);
-    if(t){
-      const dx=t.x-f.x,dy=t.y-f.y,d=Math.hypot(dx,dy),an=Math.atan2(dy,dx),sm=f.para>0?.45:1;
-      if(f.role==='sniper'&&d<f.range*.72){f.x-=Math.cos(an)*f.speed*.55*sm*dt;f.y-=Math.sin(an)*f.speed*.55*sm*dt}
-      else if(d>f.range*.88){const st=f.role==='speedster'?Math.sin(sim.t*6+f.id)*.42:0;f.x+=Math.cos(an+st)*f.speed*sm*dt;f.y+=Math.sin(an+st)*f.speed*sm*dt}
-      if(d<=f.range&&f.cd<=0){attack(f,t,en,al);f.cd=Math.max(.42,(1.35-f.spe/220)*(f.para>0?1.5:1))}}
-    for(const o of al){if(o===f||!o.alive)continue;const sx=f.x-o.x,sy=f.y-o.y,sd=Math.hypot(sx,sy),ms=(f.radius+o.radius)*.85;
-      if(sd>0&&sd<ms){const p=(ms-sd)*2.2*dt;f.x+=sx/sd*p;f.y+=sy/sd*p}}
-    f.x=Math.max(26,Math.min(W-26,f.x));f.y=Math.max(26,Math.min(H-26,f.y))}
-  for(let i=sim.proj.length-1;i>=0;i--){const p=sim.proj[i];
-    if(!p.t.alive){sim.proj.splice(i,1);continue}
-    const dx=p.t.x-p.x,dy=p.t.y-p.y,d=Math.hypot(dx,dy);
-    if(d<14){hit(p.a,p.t,p.dmg,p.m,p.col,p.fx,p.en,p.al);sim.proj.splice(i,1)}else{p.x+=dx/d*390*dt;p.y+=dy/d*390*dt}}
-  for(let i=sim.parts.length-1;i>=0;i--){const p=sim.parts[i];p.x+=p.vx*dt;p.y+=p.vy*dt;if((p.life-=dt)<=0)sim.parts.splice(i,1)}
-  for(let i=sim.texts.length-1;i>=0;i--){const p=sim.texts[i];p.y-=24*dt;if((p.life-=dt)<=0)sim.texts.splice(i,1)}
-  if(sim.insp&&sim.insp.alive){cam.tx=sim.insp.x;cam.ty=sim.insp.y;cam.tz=1.75;updInsp()}
-  else if(few){const f=focus(sv);cam.tx=f.x;cam.ty=f.y;cam.tz=f.z}
-  else{if(sim.insp)clearInsp();cam.tx=W/2;cam.ty=H/2;cam.tz=1}
-  for(const k of['x','y','z'])cam[k]+=(cam['t'+k]-cam[k])*.085;
-  byTeam.forEach((a,i)=>{$('al-'+i).textContent=a.length;$('dm-'+i).style.width=(a.length/n*100)+'%'});
-  $('timer').textContent=sim.t.toFixed(1)+'s'}
+    function getTeamStyle(teamIdx) {
+      return TEAM_STYLES[teamIdx % TEAM_STYLES.length];
+    }
 
-/* ---------- RENDER (sin sombras bajo los Pokémon) ---------- */
-function render(){
-  const d=window.devicePixelRatio||1;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,W,H);ctx.save();
-  ctx.translate(W/2,H/2);ctx.scale(sim.cam.z,sim.cam.z);ctx.translate(-sim.cam.x,-sim.cam.y);
-  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=3;ctx.strokeRect(16,16,W-32,H-32);
-  ctx.beginPath();ctx.moveTo(W/2,16);ctx.lineTo(W/2,H-16);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,66,0,6.283);ctx.stroke();
-  for(const h of sim.heals){ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,6.283);ctx.fillStyle='rgba(16,185,129,.14)';ctx.fill();ctx.strokeStyle='#10b981';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([])}
-  for(const f of sim.F){
-    if(!f.alive)continue;
-    const ring=(r,c,w)=>{ctx.beginPath();ctx.arc(f.x,f.y,r,0,6.283);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke()};
-    if(f.burn>0)ring(f.radius+3,'#f97316',2);else if(f.para>0)ring(f.radius+3,'#eab308',2);
-    if(sim.showT>0)ring(f.radius+7,'#f59e0b',2.5);else if(sim.insp&&sim.insp.uid===f.uid)ring(f.radius+7,'#0f172a',2.5);
-    const im=sprite(f.id),sz=f.role==='tank'?45:37;
-    if(im.complete&&im.naturalWidth>0){ctx.save();if(f.flash>0)ctx.filter='brightness(2.1)';
-      if(f.teamIdx%2===0){ctx.translate(f.x,f.y);ctx.scale(-1,1);ctx.drawImage(im,-sz/2,-sz/2,sz,sz)}else ctx.drawImage(im,f.x-sz/2,f.y-sz/2,sz,sz);ctx.restore()}
-    if(f.hp<f.maxHp){const r=Math.max(0,f.hp/f.maxHp);ctx.fillStyle='rgba(15,23,42,.75)';ctx.fillRect(f.x-13,f.y-sz/2-4,26,3.5);ctx.fillStyle=r>.5?'#10b981':r>.25?'#f59e0b':'#ef4444';ctx.fillRect(f.x-13,f.y-sz/2-4,26*r,3.5)}}
-  for(const p of sim.proj){ctx.beginPath();ctx.arc(p.x,p.y,5,0,6.283);ctx.fillStyle=p.col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke()}
-  for(const p of sim.parts){ctx.globalAlpha=Math.max(0,p.life*2.5);ctx.beginPath();ctx.arc(p.x,p.y,3,0,6.283);ctx.fillStyle=p.col;ctx.fill()}
-  ctx.globalAlpha=1;ctx.font='800 12px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';
-  for(const t of sim.texts){ctx.globalAlpha=Math.min(1,t.life*1.5);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x,t.y)}
-  ctx.globalAlpha=1;ctx.restore()}
-function loop(now){
-  if(!sim.running)return;
-  const raw=(now-sim.last)/1000;sim.last=now;
-  if(!sim.paused)update(raw);
-  render();if(sim.running)requestAnimationFrame(loop)}
+    function getEffectiveness(atkType, defTypes) {
+      let mult = 1;
+      const chart = TYPE_CHART[atkType] || {};
+      for (const dt of defTypes) {
+        if (chart[dt] !== undefined) mult *= chart[dt];
+      }
+      return mult;
+    }
 
-/* ---------- INSPECTOR ---------- */
-cv.addEventListener('click',e=>{
-  if(!sim.running||sim.showT>0)return;
-  const r=cv.getBoundingClientRect(),wx=(e.clientX-r.left-W/2)/sim.cam.z+sim.cam.x,wy=(e.clientY-r.top-H/2)/sim.cam.z+sim.cam.y;
-  let c=null,bd=36;for(const f of sim.F){if(!f.alive)continue;const d=Math.hypot(f.x-wx,f.y-wy);if(d<bd){bd=d;c=f}}
-  if(c){sim.insp=c;$('insp').classList.remove('hidden');$('i-img').src=spr(c.id);updInsp()}else clearInsp()});
-function updInsp(){
-  const f=sim.insp;if(!f)return;const rl={tank:'🛡️ Tanque',speedster:'⚡ Veloz',sniper:'🎯 Francotirador'};
-  $('i-name').textContent=f.name;$('i-info').textContent=rl[f.role]+' · '+f.types.map(t=>TES[t]).join('/')+' · '+f.skill[0];
-  $('i-bar').style.width=Math.max(0,f.hp/f.maxHp*100)+'%';
-  $('i-hp').textContent=Math.max(0,Math.round(f.hp))+'/'+f.maxHp+' PS · '+f.kills+' KO';
-  $('i-st').textContent=f.burn>0?'🔥 Quemado':f.para>0?'⚡ Paralizado':'✅ Normal'}
-function clearInsp(){sim.insp=null;$('insp').classList.add('hidden')}
+    /* ==========================================================================
+       2. CONTROL DE PANTALLA COMPLETA DE LA ARENA
+       ========================================================================== */
+    let isFullscreenArena = false;
 
-/* ---------- VICTORIA Y RANKING ---------- */
-const KEY='pokemon_region_battle_ranking_v3';let last=null;
-function finish(idx,survivors){
-  sim.running=false;stopMusic();$('slow').classList.add('hidden');clearInsp();
-  [523.25,659.25,783.99,1046.5].forEach((n,i)=>setTimeout(()=>tone(n,'triangle',.24),i*105));
-  const name=sim.names[idx]||'Campeones',total=sim.F.length,dur=Number(sim.t.toFixed(1));
-  const score=Number((dur/(Math.max(.05,survivors.length/total)*Math.sqrt(total))).toFixed(2));
-  const team=sim.F.filter(f=>f.teamIdx===idx).sort((a,b)=>b.kills-a.kills||(b.alive-a.alive)),mvp=team[0]||survivors[0];
-  const m=$('mode').value;
-  last={winner:name,format:m==='royal'?'Batalla Campal':m==='tournament'?'Torneo':m==='mixed'?'Mixto':'Duelo',time:dur,survivors:survivors.length,mvp:mvp?mvp.name:'N/A',mvpId:mvp?mvp.id:25,mvpKills:mvp?mvp.kills:0,score};
-  try{const l=JSON.parse(localStorage.getItem(KEY)||'[]');l.push(last);l.sort((a,b)=>a.score-b.score);localStorage.setItem(KEY,JSON.stringify(l.slice(0,30)))}catch(e){}
-  const nb=$('btn-next');nb.textContent='⚔️ Revancha';
-  if(tour.active){const k=sim.keys[idx];
-    if(tour.round===0){tour.finalists.push(k);tour.round=1;$('banner').textContent=`🏆 Semifinal 2 (${REG[tour.regions[2]][0]} vs ${REG[tour.regions[3]][0]})`;nb.textContent='⚔️ Jugar semifinal 2'}
-    else if(tour.round===1){tour.finalists.push(k);tour.round=2;$('banner').textContent=`👑 Gran final: ${REG[tour.finalists[0]][0]} vs ${REG[tour.finalists[1]][0]}`;nb.textContent='👑 Jugar gran final'}
-    else{$('banner').textContent=`🏆 ¡${name} campeón del torneo!`;tour.round=0;tour.finalists=[];nb.textContent='🔄 Nuevo torneo'}
-    $('start-txt').textContent=nb.textContent.replace(/^\S+\s/,'').toUpperCase()}
-  $('v-title').textContent='¡'+name+' gana la batalla!';
-  $('v-stats').textContent=`Duración ${dur}s · Sobrevivientes ${survivors.length} · Índice ${score}`;
-  $('v-top').innerHTML=team.slice(0,5).map((p,i)=>`<div class="w-24 rounded-2xl border-2 ${i?'border-slate-200':'border-amber-400 bg-amber-50'} p-2"><div class="text-[11px] font-extrabold">${i?p.kills+' KO':'🥇 MVP'}</div><img src="${spr(p.id)}" class="w-14 h-14 mx-auto object-contain" alt="" /><div class="text-[11px] font-bold truncate">${p.name}</div></div>`).join('');
-  $('victory').classList.remove('hidden')}
-function shareCard(){
-  if(!last)return;const c=document.createElement('canvas');c.width=640;c.height=340;const o=c.getContext('2d');
-  o.fillStyle='#0f172a';o.fillRect(0,0,640,340);o.strokeStyle='#f59e0b';o.lineWidth=6;o.strokeRect(12,12,616,316);
-  o.fillStyle='#fbbf24';o.font='800 16px sans-serif';o.fillText('BATALLA DE REGIONES POKÉMON',36,54);
-  o.fillStyle='#fff';o.font='800 34px sans-serif';o.fillText('🏆 '+last.winner.toUpperCase(),36,108);
-  o.fillStyle='#94a3b8';o.font='600 18px sans-serif';o.fillText(`${last.format} • ${last.time}s • Vivos: ${last.survivors} • Índice ${last.score}`,36,160);
-  o.fillStyle='#38bdf8';o.font='800 22px sans-serif';o.fillText(`⭐ MVP: ${last.mvp} (${last.mvpKills} KO)`,36,245);
-  const im=sprite(last.mvpId);if(im.complete&&im.naturalWidth)o.drawImage(im,460,120,140,140);
-  const a=document.createElement('a');a.download='batalla-'+last.winner.toLowerCase().replace(/\s+/g,'-')+'.png';
-  try{a.href=c.toDataURL('image/png');a.click();$('share-lbl').textContent='✅ Guardada'}catch(e){$('share-lbl').textContent='No se pudo guardar'}
-  setTimeout(()=>$('share-lbl').textContent='Guardar imagen',2500)}
-function openRanking(){
-  let l=[];try{l=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
-  $('rk-empty').classList.toggle('hidden',l.length>0);
-  $('rk-body').innerHTML=l.map((r,i)=>`<tr><td class="p-2 font-extrabold">${['🥇','🥈','🥉'][i]||i+1}</td><td class="p-2 text-blue-600 font-extrabold">${r.winner}</td><td class="p-2 text-slate-500">${r.format}</td><td class="p-2 tabular-nums">${r.time}s</td><td class="p-2">${r.survivors}</td><td class="p-2">${r.mvp}</td><td class="p-2 text-right font-extrabold text-amber-600 tabular-nums">${r.score}</td></tr>`).join('');
-  $('rank').classList.remove('hidden')}
-function closeRanking(){$('rank').classList.add('hidden')}
-function clearRanking(){localStorage.removeItem(KEY);openRanking()}
+    function enterFullscreenArena() {
+      const section = document.getElementById('arena-section');
+      const container = document.getElementById('canvas-container');
+      const exitBtn = document.getElementById('btn-exit-fullscreen');
 
-loadCfg();
-</script>
+      section.classList.remove('rounded-3xl', 'border-2', 'shadow-md');
+      section.classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen');
+
+      container.classList.remove('h-[520px]', 'sm:h-[600px]');
+      container.classList.add('flex-1', 'h-full');
+
+      exitBtn.classList.remove('hidden');
+      exitBtn.classList.add('flex');
+
+      document.body.style.overflow = 'hidden';
+      isFullscreenArena = true;
+      resizeCanvas();
+    }
+
+    function exitFullscreenArena() {
+      const section = document.getElementById('arena-section');
+      const container = document.getElementById('canvas-container');
+      const exitBtn = document.getElementById('btn-exit-fullscreen');
+
+      section.classList.add('rounded-3xl', 'border-2', 'shadow-md');
+      section.classList.remove('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen');
+
+      container.classList.add('h-[520px]', 'sm:h-[600px]');
+      container.classList.remove('flex-1', 'h-full');
+
+      exitBtn.classList.add('hidden');
+      exitBtn.classList.remove('flex');
+
+      document.body.style.overflow = '';
+      isFullscreenArena = false;
+      resizeCanvas();
+      if (!simState.running) renderArena();
+    }
+
+    /* ==========================================================================
+       3. MOTOR DE AUDIO CON CONTROL DE VOLUMEN Y MÚSICA DINÁMICA DE TENSIÓN
+       ========================================================================== */
+    let audioState = {
+      enabled: true,
+      musicEnabled: true,
+      volume: 0.55,
+      ctx: null,
+      musicInterval: null,
+      beatStep: 0
+    };
+
+    function initAudio() {
+      if (!audioState.ctx) {
+        audioState.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioState.ctx.state === 'suspended') audioState.ctx.resume();
+    }
+
+    function updateVolume(val) {
+      audioState.volume = Number(val) / 100;
+    }
+
+    function toggleAudio() {
+      audioState.enabled = !audioState.enabled;
+      document.getElementById('btn-sound').textContent = audioState.enabled ? '🔊' : '🔇';
+    }
+
+    function toggleMusic() {
+      audioState.musicEnabled = !audioState.musicEnabled;
+      const label = audioState.musicEnabled ? '🎵 Música: ON' : '🎵 Música: OFF';
+      const b1 = document.getElementById('btn-music');
+      const b2 = document.getElementById('btn-music-mobile');
+      if (b1) b1.textContent = label;
+      if (b2) b2.textContent = label;
+      if (!audioState.musicEnabled) stopBattleMusic();
+      else if (simState.running) startBattleMusic();
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.09, gainMult = 1.0) {
+      if (!audioState.enabled || audioState.volume <= 0) return;
+      try {
+        initAudio();
+        const osc = audioState.ctx.createOscillator();
+        const gain = audioState.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioState.ctx.currentTime);
+        const vol = 0.08 * audioState.volume * gainMult;
+        gain.gain.setValueAtTime(vol, audioState.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0008, audioState.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioState.ctx.destination);
+        osc.start();
+        osc.stop(audioState.ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function startBattleMusic() {
+      stopBattleMusic();
+      if (!audioState.musicEnabled) return;
+      const bassLine = [110, 110, 130.81, 146.83, 110, 110, 164.81, 146.83];
+      const intenseLine = [220, 261.63, 293.66, 329.63, 220, 293.66, 349.23, 392.00];
+
+      audioState.musicInterval = setInterval(() => {
+        if (!simState.running || !audioState.musicEnabled) return;
+        const seq = simState.slowMoActive ? intenseLine : bassLine;
+        const note = seq[audioState.beatStep % seq.length];
+        playTone(note, simState.slowMoActive ? 'sawtooth' : 'triangle', 0.16, 0.45);
+        audioState.beatStep++;
+      }, 240);
+    }
+
+    function stopBattleMusic() {
+      if (audioState.musicInterval) {
+        clearInterval(audioState.musicInterval);
+        audioState.musicInterval = null;
+      }
+    }
+
+    /* ==========================================================================
+       4. CACHÉ Y TRADUCCIÓN AUTOMÁTICA AL ESPAÑOL DESDE POKÉAPI
+       ========================================================================== */
+    const pokeCache = new Map();
+    const spriteCache = new Map();
+
+    const SPANISH_OVERRIDES = {
+      'nidoran-f': 'Nidoran♀', 'nidoran-m': 'Nidoran♂', 'mr-mime': 'Mr. Mime',
+      'ho-oh': 'Ho-Oh', 'type-null': 'Código Cero', 'jangmo-o': 'Jangmo-o',
+      'hakamo-o': 'Hakamo-o', 'kommo-o': 'Kommo-o', 'tapu-koko': 'Tapu Koko',
+      'tapu-lele': 'Tapu Lele', 'tapu-bulu': 'Tapu Bulu', 'tapu-fini': 'Tapu Fini'
+    };
+
+    function shuffled(arr) { // Fisher-Yates (uniforme)
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function setTextIfChanged(el, text) {
+      if (el && el.textContent !== text) el.textContent = text;
+    }
+
+    function camLerpFactor(k, dt) { // interpolación independiente de los FPS
+      return 1 - Math.pow(1 - k, Math.min(dt, 0.1) * 60);
+    }
+
+    function formatSpanishName(rawName) {
+      if (SPANISH_OVERRIDES[rawName]) return SPANISH_OVERRIDES[rawName];
+      return rawName
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+
+    function loadSpriteImage(id) {
+      if (spriteCache.has(id)) return spriteCache.get(id);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+      spriteCache.set(id, img);
+      return img;
+    }
+
+    const POKE_CACHE_KEY = 'pokemon_data_cache_v1';
+    let persistTimer = null;
+    (function restorePokeCache() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(POKE_CACHE_KEY) || '{}');
+        Object.values(raw).forEach(p => {
+          if (p && p.id) pokeCache.set(p.id, { ...p, isLegendary: LEGENDARY_IDS.has(p.id) });
+        });
+      } catch (e) {}
+    })();
+
+    function persistPokeCache() {
+      clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => {
+        try {
+          const obj = {};
+          pokeCache.forEach((p, id) => { if (!p.isFallback) obj[id] = p; });
+          localStorage.setItem(POKE_CACHE_KEY, JSON.stringify(obj));
+        } catch (e) {}
+      }, 800);
+    }
+
+    async function fetchPokemonData(id) {
+      if (pokeCache.has(id)) return pokeCache.get(id);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const stats = {};
+          data.stats.forEach(s => { stats[s.stat.name] = s.base_stat; });
+
+          const hp = stats.hp || 60;
+          const atk = stats.attack || 60;
+          const def = stats.defense || 60;
+          const spa = stats['special-attack'] || 60;
+          const spd = stats['special-defense'] || 60;
+          const spe = stats.speed || 60;
+
+          const clean = {
+            id: data.id,
+            name: formatSpanishName(data.species ? data.species.name : data.name),
+            types: data.types.map(t => t.type.name),
+            hp, atk, def, spa, spd, spe,
+            bst: hp + atk + def + spa + spd + spe,
+            isLegendary: LEGENDARY_IDS.has(data.id)
+          };
+          pokeCache.set(id, clean);
+          loadSpriteImage(id);
+          persistPokeCache();
+          return clean;
+        } catch (err) {
+          if (attempt === 0) await new Promise(r => setTimeout(r, 350));
+        }
+      }
+      // Fallback: NO se cachea, así un fallo de red no contamina toda la sesión
+      loadSpriteImage(id);
+      return {
+        id, name: `Pokémon #${id}`, types: ['normal'],
+        hp: 65, atk: 65, def: 65, spa: 65, spd: 65, spe: 65, bst: 390,
+        isLegendary: LEGENDARY_IDS.has(id), isFallback: true
+      };
+    }
+
+    async function loadFilteredRoster(regionKey, filterMode, onProgress) {
+      const reg = REGIONS[regionKey];
+      const ids = [];
+      for (let i = reg.start; i <= reg.end; i++) ids.push(i);
+
+      const rawList = [];
+      const batchSize = 30;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const chunk = ids.slice(i, i + batchSize);
+        const fetched = await Promise.all(chunk.map(id => fetchPokemonData(id)));
+        rawList.push(...fetched);
+        if (onProgress) onProgress(fetched.length);
+      }
+
+      return rawList.filter(p => {
+        if (filterMode === 'nolegend' && p.isLegendary) return false;
+        if (filterMode === 'bst500' && p.bst > 520) return false;
+        if (filterMode === 'final' && p.bst < 470) return false;
+        return true;
+      });
+    }
+
+    /* ==========================================================================
+       5. UI DE PREVISUALIZACIÓN DE REGIONES, MODOS Y TORNEO
+       ========================================================================== */
+    function renderRegionPreviews() {
+      const mode = document.getElementById('battle-mode').value;
+      const slotsCount = (mode === 'royal' || mode === 'tournament') ? 4 : 2;
+
+      for (let i = 0; i < 4; i++) {
+        const card = document.getElementById(`slot-card-${i}`);
+        if (i >= slotsCount) {
+          card.classList.add('hidden');
+          continue;
+        }
+        card.classList.remove('hidden');
+        const regKey = document.getElementById(`select-reg-${i}`).value;
+        const reg = REGIONS[regKey];
+        document.getElementById(`count-${i}`).textContent = `${reg.end - reg.start + 1} Poké`;
+
+        const previewBox = document.getElementById(`preview-${i}`);
+        previewBox.innerHTML = reg.starters.map(sid => `
+          <div class="flex flex-col items-center">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${sid}.png" class="w-11 h-11 object-contain" alt="Inicial" />
+          </div>
+        `).join('');
+      }
+    }
+
+    let tournamentState = {
+      active: false,
+      round: 0,
+      regions: [],
+      finalists: []
+    };
+
+    function onModeChange() {
+      const mode = document.getElementById('battle-mode').value;
+      renderRegionPreviews();
+      const banner = document.getElementById('tournament-banner');
+      if (mode === 'tournament') {
+        tournamentState = { active: true, round: 0, regions: [], finalists: [] };
+        banner.classList.remove('hidden');
+        banner.textContent = '🏆 Torneo: Semifinal 1 (Equipo 1 vs Equipo 2)';
+        document.getElementById('btn-start-text').textContent = 'JUGAR SEMIFINAL 1';
+      } else {
+        tournamentState.active = false;
+        banner.classList.add('hidden');
+        document.getElementById('btn-start-text').textContent = '¡INICIAR BATALLA!';
+      }
+    }
+
+    /* ==========================================================================
+       6. MOTOR PRINCIPAL DE SIMULACIÓN, CÁMARA DINÁMICA Y ENFOQUE A GANADORES
+       ========================================================================== */
+    const canvas = document.getElementById('battle-canvas');
+    const ctx = canvas.getContext('2d');
+    let DPR = 1;
+    const worldW = () => canvas.width / DPR;
+    const worldH = () => canvas.height / DPR;
+
+    let simState = {
+      running: false,
+      victoryShowcaseTimer: 0,
+      pendingWinData: null,
+      elapsedTime: 0,
+      lastFrameTime: 0,
+      fighters: [],
+      projectiles: [],
+      particles: [],
+      floatingTexts: [],
+      healZones: [],
+      killTimeline: [],
+      weather: 'clear',
+      weatherTimer: 10,
+      camera: { x: 0, y: 0, zoom: 1, targetX: 0, targetY: 0, targetZoom: 1 },
+      inspectedFighter: null,
+      slowMoActive: false,
+      teamNames: []
+    };
+
+    function assignTacticalRole(poke) {
+      const bulk = poke.hp + poke.def + poke.spd;
+      if (poke.spe >= 95 && poke.spe >= poke.spa) return 'speedster';
+      if (poke.spa >= 90 && poke.spa > poke.atk) return 'sniper';
+      if (bulk >= 245) return 'tank';
+      return poke.spa > poke.atk ? 'sniper' : 'speedster';
+    }
+
+    function createFighter(pokeData, teamIdx, totalTeams, arenaW, arenaH) {
+      const role = assignTacticalRole(pokeData);
+      let spawnX, spawnY;
+      if (totalTeams === 2) {
+        spawnX = teamIdx === 0
+          ? 55 + Math.random() * (arenaW * 0.28)
+          : arenaW - 55 - Math.random() * (arenaW * 0.28);
+        spawnY = 55 + Math.random() * (arenaH - 110);
+      } else {
+        const quadX = teamIdx % 2 === 0 ? 0.18 : 0.82;
+        const quadY = teamIdx < 2 ? 0.24 : 0.76;
+        spawnX = arenaW * quadX + (Math.random() - 0.5) * (arenaW * 0.22);
+        spawnY = arenaH * quadY + (Math.random() - 0.5) * (arenaH * 0.22);
+      }
+
+      const roleHpBonus = role === 'tank' ? 1.38 : (role === 'sniper' ? 0.92 : 1.0);
+      const maxHp = Math.round((pokeData.hp * 2.3 + 95) * roleHpBonus);
+      const primaryType = pokeData.types[0];
+      const skill = TYPE_SKILLS[primaryType] || TYPE_SKILLS.normal;
+
+      const aiModes = ['nearest', 'advantage', 'weakest'];
+      const aiPreference = role === 'sniper' ? 'advantage' : aiModes[pokeData.id % aiModes.length];
+
+      return {
+        uid: `T${teamIdx}-${pokeData.id}-${Math.random().toString(36).slice(2, 6)}`,
+        ...pokeData,
+        teamIdx,
+        role,
+        skill,
+        aiPreference,
+        x: Math.max(35, Math.min(arenaW - 35, spawnX)),
+        y: Math.max(35, Math.min(arenaH - 35, spawnY)),
+        maxHp,
+        currentHp: maxHp,
+        alive: true,
+        kills: 0,
+        cooldown: Math.random() * 0.9,
+        skillCooldown: 3 + Math.random() * 3,
+        burnTimer: 0,
+        paraTimer: 0,
+        hitFlash: 0,
+        radius: role === 'tank' ? 19 : 15,
+        range: role === 'sniper' ? 210 : (role === 'speedster' ? 50 : 42),
+        moveSpeed: (42 + pokeData.spe * 0.45) * (role === 'speedster' ? 1.25 : (role === 'tank' ? 0.82 : 1.0))
+      };
+    }
+
+    async function handleStartClick() {
+      initAudio();
+      const mode = document.getElementById('battle-mode').value;
+      const filterMode = document.getElementById('roster-filter').value;
+      const equalize = document.getElementById('chk-balance').checked;
+
+      let activeRegionKeys = [];
+      if (mode === 'tournament') {
+        if (!tournamentState.active || tournamentState.round === 0) {
+          const picks = [0, 1, 2, 3].map(i => document.getElementById(`select-reg-${i}`).value);
+          if (new Set(picks).size < 4) {
+            alert('En el torneo cada equipo debe ser una región distinta.');
+            return;
+          }
+          tournamentState = {
+            active: true,
+            round: 0,
+            regions: [0, 1, 2, 3].map(i => document.getElementById(`select-reg-${i}`).value),
+            finalists: []
+          };
+          activeRegionKeys = [tournamentState.regions[0], tournamentState.regions[1]];
+        } else if (tournamentState.round === 1) {
+          activeRegionKeys = [tournamentState.regions[2], tournamentState.regions[3]];
+        } else {
+          activeRegionKeys = [tournamentState.finalists[0], tournamentState.finalists[1]];
+        }
+      } else if (mode === 'royal') {
+        activeRegionKeys = [0, 1, 2, 3].map(i => document.getElementById(`select-reg-${i}`).value);
+      } else {
+        activeRegionKeys = [0, 1].map(i => document.getElementById(`select-reg-${i}`).value);
+      }
+
+      document.getElementById('idle-overlay').classList.add('hidden');
+      document.getElementById('victory-overlay').classList.add('hidden');
+      document.getElementById('btn-start').disabled = true;
+      const loadWrap = document.getElementById('loading-bar-wrapper');
+      const loadBar = document.getElementById('loading-bar');
+      const loadPct = document.getElementById('loading-percent');
+      loadWrap.classList.remove('hidden');
+
+      let totalEst = activeRegionKeys.reduce((acc, k) => acc + (REGIONS[k].end - REGIONS[k].start + 1), 0);
+      let loaded = 0;
+
+      const rosters = await Promise.all(
+        activeRegionKeys.map(k => loadFilteredRoster(k, filterMode, (inc) => {
+          loaded += inc;
+          const pct = Math.min(100, Math.round((loaded / totalEst) * 100));
+          loadBar.style.width = `${pct}%`;
+          loadPct.textContent = `${pct}%`;
+        }))
+      );
+
+      loadWrap.classList.add('hidden');
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-reset').classList.remove('hidden');
+
+      let finalRosters = rosters;
+      let teamNames = activeRegionKeys.map(k => REGIONS[k].name);
+
+      if (mode === 'mixed') {
+        const pool = shuffled(rosters.flat());
+        const half = Math.floor(pool.length / 2);
+        finalRosters = [pool.slice(0, half), pool.slice(half, half * 2)];
+        teamNames = ['Alianza Alfa', 'Alianza Omega'];
+      } else if (equalize) {
+        const minSize = Math.max(10, Math.min(...rosters.map(r => r.length)));
+        finalRosters = rosters.map(r => shuffled(r).slice(0, minSize));
+      }
+
+      // Abrir la batalla sobre toda la pantalla principal
+      enterFullscreenArena();
+
+      const W = worldW();
+      const H = worldH();
+
+      simState.fighters = [];
+      finalRosters.forEach((roster, tIdx) => {
+        roster.forEach(p => {
+          simState.fighters.push(createFighter(p, tIdx, finalRosters.length, W, H));
+        });
+      });
+
+      simState.teamNames = teamNames;
+      simState.activeRegionKeys = activeRegionKeys;
+      simState.projectiles = [];
+      simState.particles = [];
+      simState.floatingTexts = [];
+      simState.healZones = [];
+      simState.killTimeline = [];
+      simState.elapsedTime = 0;
+      simState.weather = 'clear';
+      simState.weatherTimer = 11;
+      simState.inspectedFighter = null;
+      simState.slowMoActive = false;
+      simState.victoryShowcaseTimer = 0;
+      simState.pendingWinData = null;
+      simState.camera = { x: W / 2, y: H / 2, zoom: 1, targetX: W / 2, targetY: H / 2, targetZoom: 1 };
+
+      document.getElementById('inspector-card').classList.add('hidden');
+      document.getElementById('slowmo-overlay').classList.add('hidden');
+      document.getElementById('live-mvp-badge').classList.remove('hidden');
+      document.getElementById('kill-feed').innerHTML = '';
+
+      buildDynamicHud(teamNames, finalRosters);
+
+      simState.running = true;
+      simState.lastFrameTime = performance.now();
+      startBattleMusic();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function buildDynamicHud(teamNames, rosters) {
+      const container = document.getElementById('hud-teams-container');
+      const domBar = document.getElementById('dominance-bar-container');
+      container.innerHTML = '';
+      domBar.innerHTML = '';
+
+      teamNames.forEach((name, idx) => {
+        const st = getTeamStyle(idx);
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-1.5 bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700';
+        div.innerHTML = `
+          <span style="color:${st.hex}" class="text-xs font-black">${st.symbol}</span>
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 leading-none">${name}</div>
+            <div class="font-display font-extrabold text-xs sm:text-sm leading-tight">
+              <span id="hud-alive-${idx}">${rosters[idx].length}</span><span class="text-[10px] text-slate-400">/${rosters[idx].length}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+
+        const seg = document.createElement('div');
+        seg.id = `dom-seg-${idx}`;
+        seg.style.backgroundColor = st.hex;
+        seg.style.width = `${100 / teamNames.length}%`;
+        seg.className = 'h-full transition-all duration-300';
+        domBar.appendChild(seg);
+      });
+    }
+
+    function resetArena() {
+      simState.running = false;
+      simState.victoryShowcaseTimer = 0;
+      stopBattleMusic();
+      exitFullscreenArena();
+      document.getElementById('idle-overlay').classList.remove('hidden');
+      document.getElementById('victory-overlay').classList.add('hidden');
+      document.getElementById('inspector-card').classList.add('hidden');
+      document.getElementById('slowmo-overlay').classList.add('hidden');
+      document.getElementById('live-mvp-badge').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       7. COMBATE, CLIMA Y ZONAS DE CURACIÓN
+       ========================================================================== */
+    function triggerArenaEvent() {
+      const W = worldW();
+      const H = worldH();
+      const roll = Math.random();
+
+      if (roll < 0.35) {
+        simState.healZones.push({
+          x: W * (0.25 + Math.random() * 0.5),
+          y: H * (0.25 + Math.random() * 0.5),
+          radius: 52,
+          life: 9
+        });
+        showWeatherBadge('💚 Zona Curativa Activa', 'text-emerald-400');
+      } else {
+        const weathers = [
+          { id: 'sun', label: '☀️ Sol (+Fuego)', color: 'text-amber-400' },
+          { id: 'rain', label: '🌧️ Lluvia (+Agua)', color: 'text-sky-400' },
+          { id: 'storm', label: '⚡ Tormenta (+Eléctrico)', color: 'text-yellow-300' },
+          { id: 'clear', label: '🌤️ Cielo Despejado', color: 'text-slate-300' }
+        ];
+        const w = weathers[Math.floor(Math.random() * weathers.length)];
+        simState.weather = w.id;
+        showWeatherBadge(w.label, w.color);
+      }
+    }
+
+    function showWeatherBadge(text, colorClass) {
+      const badge = document.getElementById('weather-badge');
+      const label = document.getElementById('weather-label');
+      badge.classList.remove('hidden');
+      label.textContent = text;
+      label.className = `text-[11px] font-extrabold ${colorClass}`;
+    }
+
+    function selectSmartTarget(attacker, enemies) {
+      if (enemies.length === 0) return null;
+      if (attacker.aiPreference === 'nearest') {
+        let best = null, minD = Infinity;
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          const d = Math.hypot(e.x - attacker.x, e.y - attacker.y);
+          if (d < minD) { minD = d; best = e; }
+        }
+        return best;
+      }
+
+      let bestTarget = null;
+      let bestScore = -Infinity;
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const dist = Math.hypot(e.x - attacker.x, e.y - attacker.y);
+        const eff = getEffectiveness(attacker.types[0], e.types);
+        const hpFactor = attacker.aiPreference === 'weakest' ? (1 - e.currentHp / e.maxHp) * 140 : 0;
+        const advFactor = attacker.aiPreference === 'advantage' ? (eff - 1) * 120 : 0;
+        const score = advFactor + hpFactor - dist * 0.35;
+        if (score > bestScore) {
+          bestScore = score;
+          bestTarget = e;
+        }
+      }
+      return bestTarget;
+    }
+
+    function executeAttack(attacker, target, enemies, allies) {
+      let bestType = attacker.types[0];
+      let bestMult = getEffectiveness(bestType, target.types);
+      if (attacker.types.length > 1) {
+        const m2 = getEffectiveness(attacker.types[1], target.types);
+        if (m2 > bestMult) { bestType = attacker.types[1]; bestMult = m2; }
+      }
+
+      const useSpecialSkill = attacker.skillCooldown <= 0;
+      const skill = TYPE_SKILLS[bestType] || TYPE_SKILLS.normal;
+      if (useSpecialSkill) attacker.skillCooldown = 5.5;
+
+      const stab = bestType === attacker.types[0] ? 1.5 : 1.25;
+      let weatherMult = 1.0;
+      if (simState.weather === 'sun' && bestType === 'fire') weatherMult = 1.3;
+      if (simState.weather === 'rain' && bestType === 'water') weatherMult = 1.3;
+      if (simState.weather === 'storm' && bestType === 'electric') weatherMult = 1.3;
+
+      const offense = Math.max(attacker.atk, attacker.spa);
+      let defense = Math.max(target.def, target.spd);
+      if (useSpecialSkill && skill.effect === 'pierce') defense *= 0.65;
+
+      const basePow = useSpecialSkill ? skill.power * 1.22 : skill.power;
+      const roleDmg = attacker.role === 'sniper' ? SNIPER_DAMAGE_MULT : 1;
+      const rawDmg = Math.round(((offense / defense) * (basePow * 0.35) * stab * bestMult * weatherMult * roleDmg) * (0.9 + Math.random() * 0.2));
+      const dmg = Math.max(bestMult === 0 ? 1 : 5, rawDmg); // inmune: solo 1 de daño residual
+
+      if (attacker.role === 'sniper') {
+        simState.projectiles.push({
+          x: attacker.x, y: attacker.y,
+          target, attacker, damage: dmg, mult: bestMult,
+          color: TYPE_COLORS[bestType] || '#38bdf8',
+          speed: 390,
+          specialEffect: useSpecialSkill ? skill.effect : null,
+          enemies, allies
+        });
+      } else {
+        resolveHit(attacker, target, dmg, bestMult, TYPE_COLORS[bestType], useSpecialSkill ? skill.effect : null, enemies, allies);
+      }
+    }
+
+    function resolveHit(attacker, target, damage, mult, color, specialEffect, enemies, allies) {
+      if (!target.alive) return;
+      applySingleDamage(attacker, target, damage, mult, color);
+
+      if (!specialEffect) return;
+
+      if (specialEffect === 'burn') {
+        target.burnTimer = 3.0;
+        target.burnSource = attacker;
+      } else if (specialEffect === 'para') {
+        target.paraTimer = 2.2;
+      } else if (specialEffect === 'heal') {
+        const healAmt = Math.round(damage * 0.45);
+        attacker.currentHp = Math.min(attacker.maxHp, attacker.currentHp + healAmt);
+        for (const a of allies) {
+          if (a.alive && a !== attacker && Math.hypot(a.x - attacker.x, a.y - attacker.y) < 75) {
+            a.currentHp = Math.min(a.maxHp, a.currentHp + Math.round(healAmt * 0.6));
+          }
+        }
+      } else if (specialEffect === 'aoe') {
+        for (const e of enemies) {
+          if (e.alive && e !== target && Math.hypot(e.x - target.x, e.y - target.y) < 68) {
+            applySingleDamage(attacker, e, Math.round(damage * 0.55), 1, color);
+          }
+        }
+      }
+    }
+
+    function applySingleDamage(attacker, target, damage, mult, color) {
+      if (!target.alive) return;
+      target.currentHp -= damage;
+      target.hitFlash = 0.14;
+
+      const ang = Math.atan2(target.y - attacker.y, target.x - attacker.x);
+      target.x += Math.cos(ang) * 4;
+      target.y += Math.sin(ang) * 4;
+
+      for (let i = 0; i < 5; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const spd = 28 + Math.random() * 65;
+        simState.particles.push({
+          x: target.x, y: target.y,
+          vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+          life: 0.32, color: color || '#f59e0b', size: 3
+        });
+      }
+
+      // Solo muestra daño numérico limpio (eliminados mensajes de "¡Súper eficaz!")
+      if (simState.slowMoActive || (simState.inspectedFighter && simState.inspectedFighter.uid === target.uid)) {
+        simState.floatingTexts.push({
+          x: target.x,
+          y: target.y - 18,
+          text: `-${damage}`,
+          color: mult >= 2 ? '#dc2626' : '#334155',
+          life: 0.65
+        });
+      }
+
+      if (target.currentHp <= 0) registerKnockout(attacker, target, mult);
+    }
+
+    function registerKnockout(killer, victim, mult) {
+      victim.currentHp = 0;
+      victim.alive = false;
+      simState.killTimeline.push(simState.elapsedTime);
+      playTone(mult >= 2 ? 540 : 300, 'triangle', 0.09, 0.7);
+      if (killer) killer.kills += 1;
+      pushKillFeed(killer, victim);
+    }
+
+    function pushKillFeed(killer, victim) {
+      const feed = document.getElementById('kill-feed');
+      const st = getTeamStyle(killer ? killer.teamIdx : victim.teamIdx);
+      const item = document.createElement('div');
+      item.style.borderLeftColor = st.hex;
+      item.className = 'px-2.5 py-1 rounded-lg border-l-4 bg-slate-900/90 text-white text-[11px] font-semibold shadow-md backdrop-blur-sm animate-pop flex items-center justify-between gap-2';
+      item.innerHTML = `
+        <span class="truncate">${killer ? `<strong class="text-amber-300">${killer.name}</strong> eliminó a <span class="text-slate-300">${victim.name}</span>` : `<span class="text-slate-300">${victim.name}</span> cayó por daño continuo`}</span>
+      `;
+      feed.prepend(item);
+      if (feed.children.length > 4) feed.lastElementChild.remove();
+      setTimeout(() => { if (item.parentNode) item.remove(); }, 3200);
+    }
+
+    /* ==========================================================================
+       8. DETECCIÓN DE GRUPOS PEQUEÑOS PARA ZOOM Y CÁMARA LENTA CINEMÁTICA
+       ========================================================================== */
+    function findSmallClusterFocus(survivors) {
+      if (survivors.length === 0) return null;
+      if (survivors.length <= 4) {
+        const cx = survivors.reduce((s, p) => s + p.x, 0) / survivors.length;
+        const cy = survivors.reduce((s, p) => s + p.y, 0) / survivors.length;
+        return { x: cx, y: cy, zoom: 1.85 };
+      }
+
+      // Buscar el núcleo de acción donde hay un grupo pequeño (2 a 5 Pokémon cercanos)
+      let bestCluster = null;
+      let bestScore = -1;
+      const clusterRadius = 180;
+
+      for (const anchor of survivors) {
+        const neighbors = survivors.filter(o => Math.hypot(o.x - anchor.x, o.y - anchor.y) <= clusterRadius);
+        const teamsInCluster = new Set(neighbors.map(n => n.teamIdx)).size;
+        // Priorizar grupos pequeños donde haya combate activo entre equipos distintos
+        if (neighbors.length >= 2 && neighbors.length <= 6 && teamsInCluster >= 2) {
+          const score = teamsInCluster * 10 - neighbors.length;
+          if (score > bestScore) {
+            bestScore = score;
+            bestCluster = neighbors;
+          }
+        }
+      }
+
+      if (bestCluster) {
+        const cx = bestCluster.reduce((s, p) => s + p.x, 0) / bestCluster.length;
+        const cy = bestCluster.reduce((s, p) => s + p.y, 0) / bestCluster.length;
+        return { x: cx, y: cy, zoom: 1.65 };
+      }
+
+      // Fallback al centroide de los sobrevivientes
+      const cx = survivors.reduce((s, p) => s + p.x, 0) / survivors.length;
+      const cy = survivors.reduce((s, p) => s + p.y, 0) / survivors.length;
+      return { x: cx, y: cy, zoom: 1.42 };
+    }
+
+    function updateSimulation(rawDt) {
+      const W = worldW();
+      const H = worldH();
+
+      // Fase de celebración y enfoque a los ganadores antes de mostrar el modal final
+      if (simState.victoryShowcaseTimer > 0) {
+        const vdt = Math.min(rawDt, 0.1);
+        simState.victoryShowcaseTimer -= vdt;
+        const winners = simState.pendingWinData.survivors;
+
+        if (winners.length > 0) {
+          const cx = winners.reduce((s, p) => s + p.x, 0) / winners.length;
+          const cy = winners.reduce((s, p) => s + p.y, 0) / winners.length;
+          simState.camera.targetX = cx;
+          simState.camera.targetY = cy;
+          simState.camera.targetZoom = winners.length === 1 ? 2.25 : (winners.length <= 4 ? 1.85 : 1.55);
+        }
+
+        // Pequeño salto celebratorio de los ganadores
+        for (const w of winners) {
+          w.y += Math.sin(simState.victoryShowcaseTimer * 14 + w.id) * 0.45 * vdt * 60;
+        }
+
+        const kv = camLerpFactor(0.08, vdt);
+        simState.camera.x += (simState.camera.targetX - simState.camera.x) * kv;
+        simState.camera.y += (simState.camera.targetY - simState.camera.y) * kv;
+        simState.camera.zoom += (simState.camera.targetZoom - simState.camera.zoom) * kv;
+
+        if (simState.victoryShowcaseTimer <= 0) {
+          const { winIdx, survivors } = simState.pendingWinData;
+          simState.pendingWinData = null;
+          finishBattle(winIdx, survivors);
+        }
+        return;
+      }
+
+      // Agrupar vivos por equipo
+      const aliveByTeam = simState.teamNames.map((_, idx) =>
+        simState.fighters.filter(f => f.alive && f.teamIdx === idx)
+      );
+      const activeTeams = aliveByTeam.filter(arr => arr.length > 0);
+
+      // Si solo queda 1 equipo vencedor, iniciar enfoque cinemático a los ganadores
+      if (activeTeams.length <= 1) {
+        const winIdx = aliveByTeam.findIndex(arr => arr.length > 0);
+        const winners = aliveByTeam[winIdx] || [];
+        simState.victoryShowcaseTimer = 2.8;
+        simState.pendingWinData = { winIdx, survivors: winners };
+
+        const overlay = document.getElementById('slowmo-overlay');
+        const badge = document.getElementById('slowmo-badge-text');
+        overlay.classList.remove('hidden');
+        badge.textContent = winIdx >= 0 ? `🏆 ¡VICTORIA DE ${(simState.teamNames[winIdx] || 'CAMPEONES').toUpperCase()}!` : '🤝 ¡EMPATE!';
+        return;
+      }
+
+      const survivors = simState.fighters.filter(f => f.alive);
+      const totalAlive = survivors.length;
+      const enemiesByTeam = simState.teamNames.map((_, idx) => survivors.filter(o => o.teamIdx !== idx));
+
+      // Activar cámara lenta cuando van quedando pocos Pokémon (≤ 12)
+      const isFewLeft = totalAlive <= 12;
+      const isFinalClash = totalAlive <= 4;
+
+      if (isFewLeft && !simState.slowMoActive) {
+        simState.slowMoActive = true;
+        document.getElementById('slowmo-overlay').classList.remove('hidden');
+      }
+      if (simState.slowMoActive) {
+        setTextIfChanged(document.getElementById('slowmo-badge-text'), isFinalClash
+          ? '⚡ DUELO FINAL • CÁMARA LENTA ⚡'
+          : `🎬 CÁMARA LENTA • QUEDAN ${totalAlive} POKÉMON`);
+      }
+
+      const timeScale = isFinalClash ? 0.35 : (isFewLeft ? 0.5 : 1.0);
+      const dt = Math.min(rawDt, 0.05) * timeScale;
+      simState.elapsedTime += dt;
+
+      // Eventos de arena periódicos
+      simState.weatherTimer -= dt;
+      if (simState.weatherTimer <= 0) {
+        triggerArenaEvent();
+        simState.weatherTimer = 14;
+      }
+
+      // Actualizar zonas de curación
+      for (let i = simState.healZones.length - 1; i >= 0; i--) {
+        const hz = simState.healZones[i];
+        hz.life -= dt;
+        if (hz.life <= 0) {
+          simState.healZones.splice(i, 1);
+          continue;
+        }
+        for (const f of simState.fighters) {
+          if (f.alive && Math.hypot(f.x - hz.x, f.y - hz.y) < hz.radius) {
+            f.currentHp = Math.min(f.maxHp, f.currentHp + 16 * dt);
+          }
+        }
+      }
+
+      // Actualizar combatientes
+      let currentMvp = null;
+      for (const f of simState.fighters) {
+        if (!f.alive) continue;
+        if (!currentMvp || f.kills > currentMvp.kills) currentMvp = f;
+
+        if (f.hitFlash > 0) f.hitFlash -= dt;
+        if (f.cooldown > 0) f.cooldown -= dt;
+        if (f.skillCooldown > 0) f.skillCooldown -= dt;
+        if (f.paraTimer > 0) f.paraTimer -= dt;
+
+        if (f.burnTimer > 0) {
+          f.burnTimer -= dt;
+          f.currentHp -= 11 * dt;
+          if (f.currentHp <= 0) {
+            registerKnockout(f.burnSource, f, 1);
+            continue;
+          }
+        }
+
+        const enemies = enemiesByTeam[f.teamIdx];
+        const allies = aliveByTeam[f.teamIdx];
+        const target = selectSmartTarget(f, enemies);
+
+        if (target) {
+          const dx = target.x - f.x;
+          const dy = target.y - f.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          const speedMod = f.paraTimer > 0 ? 0.45 : 1.0;
+
+          if (f.role === 'sniper' && dist < f.range * 0.72) {
+            f.x -= Math.cos(angle) * f.moveSpeed * 0.55 * speedMod * dt;
+            f.y -= Math.sin(angle) * f.moveSpeed * 0.55 * speedMod * dt;
+          } else if (dist > f.range * 0.88) {
+            const strafe = f.role === 'speedster' ? Math.sin(simState.elapsedTime * 6 + f.id) * 0.42 : 0;
+            f.x += Math.cos(angle + strafe) * f.moveSpeed * speedMod * dt;
+            f.y += Math.sin(angle + strafe) * f.moveSpeed * speedMod * dt;
+          }
+
+          if (dist <= f.range && f.cooldown <= 0) {
+            executeAttack(f, target, enemies, allies);
+            f.cooldown = Math.max(0.42, (1.35 - f.spe / 220) * (f.paraTimer > 0 ? 1.5 : 1));
+          }
+        }
+
+        // Separación suave entre aliados
+        for (const other of allies) {
+          if (other === f || !other.alive) continue;
+          const sdx = f.x - other.x;
+          const sdy = f.y - other.y;
+          const sdist = Math.hypot(sdx, sdy);
+          const minSep = (f.radius + other.radius) * 0.85;
+          if (sdist > 0 && sdist < minSep) {
+            const push = (minSep - sdist) * 2.2 * dt;
+            f.x += (sdx / sdist) * push;
+            f.y += (sdy / sdist) * push;
+          }
+        }
+
+        f.x = Math.max(26, Math.min(W - 26, f.x));
+        f.y = Math.max(26, Math.min(H - 26, f.y));
+      }
+
+      // Actualizar proyectiles
+      for (let i = simState.projectiles.length - 1; i >= 0; i--) {
+        const p = simState.projectiles[i];
+        if (!p.target.alive) {
+          simState.projectiles.splice(i, 1);
+          continue;
+        }
+        const dx = p.target.x - p.x;
+        const dy = p.target.y - p.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 14) {
+          resolveHit(p.attacker, p.target, p.damage, p.mult, p.color, p.specialEffect, p.enemies, p.allies);
+          simState.projectiles.splice(i, 1);
+        } else {
+          p.x += (dx / dist) * p.speed * dt;
+          p.y += (dy / dist) * p.speed * dt;
+        }
+      }
+
+      // Partículas y textos
+      for (let i = simState.particles.length - 1; i >= 0; i--) {
+        const pt = simState.particles[i];
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.life -= dt;
+        if (pt.life <= 0) simState.particles.splice(i, 1);
+      }
+
+      for (let i = simState.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = simState.floatingTexts[i];
+        ft.y -= 24 * dt;
+        ft.life -= dt;
+        if (ft.life <= 0) simState.floatingTexts.splice(i, 1);
+      }
+
+      // Cámara inteligente: seguimiento manual o zoom dinámico en grupos pequeños
+      if (simState.inspectedFighter && simState.inspectedFighter.alive) {
+        simState.camera.targetX = simState.inspectedFighter.x;
+        simState.camera.targetY = simState.inspectedFighter.y;
+        simState.camera.targetZoom = 1.75;
+        updateInspectorCard();
+      } else if (isFewLeft) {
+        const focus = findSmallClusterFocus(survivors);
+        if (focus) {
+          simState.camera.targetX = focus.x;
+          simState.camera.targetY = focus.y;
+          simState.camera.targetZoom = focus.zoom;
+        }
+      } else {
+        if (simState.inspectedFighter && !simState.inspectedFighter.alive) clearInspectedPokemon();
+        simState.camera.targetX = W / 2;
+        simState.camera.targetY = H / 2;
+        simState.camera.targetZoom = 1.0;
+      }
+
+      const camLerp = camLerpFactor(0.085, rawDt);
+      simState.camera.x += (simState.camera.targetX - simState.camera.x) * camLerp;
+      simState.camera.y += (simState.camera.targetY - simState.camera.y) * camLerp;
+      simState.camera.zoom += (simState.camera.targetZoom - simState.camera.zoom) * camLerp;
+
+      // Actualizar HUD y MVP en vivo
+      aliveByTeam.forEach((arr, idx) => {
+        const el = document.getElementById(`hud-alive-${idx}`);
+        setTextIfChanged(el, String(arr.length));
+        const seg = document.getElementById(`dom-seg-${idx}`);
+        if (seg && totalAlive > 0) {
+          const w = `${(arr.length / totalAlive) * 100}%`;
+          if (seg.dataset.w !== w) { seg.dataset.w = w; seg.style.width = w; }
+        }
+      });
+
+      setTextIfChanged(document.getElementById('hud-timer'), `${simState.elapsedTime.toFixed(1)}s`);
+      if (currentMvp && currentMvp.kills > 0) {
+        setTextIfChanged(document.getElementById('live-mvp-text'), `${currentMvp.name} • ${currentMvp.kills} KO`);
+      }
+    }
+
+    /* ==========================================================================
+       9. RENDERIZADO SIN SOMBRAS DEBAJO DE LOS POKÉMON
+       ========================================================================== */
+    function renderArena() {
+      const W = worldW();
+      const H = worldH();
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.translate(W / 2, H / 2);
+      ctx.scale(simState.camera.zoom, simState.camera.zoom);
+      ctx.translate(-simState.camera.x, -simState.camera.y);
+
+      // Líneas de Estadio
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(16, 16, W - 32, H - 32);
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 16);
+      ctx.lineTo(W / 2, H - 16);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 66, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Zonas Curativas Activas
+      for (const hz of simState.healZones) {
+        ctx.beginPath();
+        ctx.arc(hz.x, hz.y, hz.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+        ctx.fill();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Combatientes (sin sombras debajo)
+      for (const f of simState.fighters) {
+        if (!f.alive) continue;
+
+        // Aura de estado (quemado o paralizado)
+        if (f.burnTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = '#f97316';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (f.paraTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Aro de selección o corona de ganador en celebración
+        if ((simState.inspectedFighter && simState.inspectedFighter.uid === f.uid) || simState.victoryShowcaseTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius + 7, 0, Math.PI * 2);
+          ctx.strokeStyle = simState.victoryShowcaseTimer > 0 ? '#f59e0b' : '#0f172a';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        const sprite = loadSpriteImage(f.id);
+        const size = f.role === 'tank' ? 45 : 37;
+        if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+          ctx.save();
+          if (f.teamIdx % 2 === 0) {
+            ctx.translate(f.x, f.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+          } else {
+            ctx.drawImage(sprite, f.x - size / 2, f.y - size / 2, size, size);
+          }
+          ctx.restore();
+        }
+
+        if (f.hitFlash > 0) {
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius + 1, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.fill();
+        }
+
+        // Barra de vida fina al recibir daño
+        if (f.currentHp < f.maxHp) {
+          const bw = 26;
+          const bh = 3.5;
+          const ratio = Math.max(0, f.currentHp / f.maxHp);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+          ctx.fillRect(f.x - bw / 2, f.y - size / 2 - 4, bw, bh);
+          ctx.fillStyle = ratio > 0.5 ? '#10b981' : (ratio > 0.25 ? '#f59e0b' : '#ef4444');
+          ctx.fillRect(f.x - bw / 2, f.y - size / 2 - 4, bw * ratio, bh);
+        }
+      }
+
+      // Proyectiles
+      for (const p of simState.projectiles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Partículas
+      for (const pt of simState.particles) {
+        ctx.globalAlpha = Math.max(0, pt.life * 2.5);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fillStyle = pt.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // Textos flotantes
+      ctx.font = '800 12px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      for (const ft of simState.floatingTexts) {
+        ctx.globalAlpha = Math.min(1, ft.life * 1.5);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.restore();
+    }
+
+    function gameLoop(now) {
+      if (!simState.running) return;
+      const rawDt = (now - simState.lastFrameTime) / 1000;
+      simState.lastFrameTime = now;
+      updateSimulation(rawDt);
+      renderArena();
+      if (simState.running) requestAnimationFrame(gameLoop);
+    }
+
+    // Inspección interactiva al tocar
+    canvas.addEventListener('click', (e) => {
+      if (!simState.running || simState.victoryShowcaseTimer > 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (worldW() / rect.width);
+      const clickY = (e.clientY - rect.top) * (worldH() / rect.height);
+      const worldX = (clickX - worldW() / 2) / simState.camera.zoom + simState.camera.x;
+      const worldY = (clickY - worldH() / 2) / simState.camera.zoom + simState.camera.y;
+
+      let closest = null, bestDist = 36;
+      for (const f of simState.fighters) {
+        if (!f.alive) continue;
+        const d = Math.hypot(f.x - worldX, f.y - worldY);
+        if (d < bestDist) { bestDist = d; closest = f; }
+      }
+
+      if (closest) {
+        simState.inspectedFighter = closest;
+        document.getElementById('inspector-card').classList.remove('hidden');
+        updateInspectorCard();
+      } else {
+        clearInspectedPokemon();
+      }
+    });
+
+    function updateInspectorCard() {
+      const f = simState.inspectedFighter;
+      if (!f) return;
+      const roleLabels = { tank: '🛡️ TANQUE', speedster: '⚡ VELOZ', sniper: '🎯 FRANCOTIRADOR' };
+      document.getElementById('insp-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${f.id}.png`;
+      document.getElementById('insp-name').textContent = f.name;
+      document.getElementById('insp-role').textContent = roleLabels[f.role];
+      document.getElementById('insp-types').textContent = f.types.map(t => TYPE_ES[t] || t).join(' / ');
+      document.getElementById('insp-skill').textContent = `Habilidad: ${f.skill.name}`;
+      document.getElementById('insp-hp-text').textContent = `${Math.max(0, Math.round(f.currentHp))} / ${f.maxHp}`;
+      document.getElementById('insp-hp-bar').style.width = `${Math.max(0, (f.currentHp / f.maxHp) * 100)}%`;
+      document.getElementById('insp-kills').textContent = f.kills;
+      document.getElementById('insp-status').textContent =
+        f.burnTimer > 0 ? '🔥 Daño continuo' : (f.paraTimer > 0 ? '⚡ Paralizado' : '✅ Normal');
+    }
+
+    function clearInspectedPokemon() {
+      simState.inspectedFighter = null;
+      document.getElementById('inspector-card').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       10. VICTORIA, CARRUSEL FLUIDO, GRÁFICA DE BAJAS Y TARJETA COMPARTIBLE
+       ========================================================================== */
+    function calculateFairScore(durationSec, survivorsCount, totalFighters) {
+      const survivalRatio = Math.max(0.05, survivorsCount / totalFighters);
+      return Number((durationSec / (survivalRatio * Math.sqrt(totalFighters))).toFixed(2));
+    }
+
+    let lastBattleSummary = null;
+
+    function finishBattle(winnerIdx, survivors) {
+      simState.running = false;
+      stopBattleMusic();
+      document.getElementById('slowmo-overlay').classList.add('hidden');
+      document.getElementById('live-mvp-badge').classList.add('hidden');
+
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((n, idx) => setTimeout(() => playTone(n, 'triangle', 0.24, 1.0), idx * 105));
+
+      const isDraw = winnerIdx < 0;
+      const winName = isDraw ? 'Empate' : (simState.teamNames[winnerIdx] || 'Equipo Campeón');
+      const totalFighters = simState.fighters.length;
+      const duration = Number(simState.elapsedTime.toFixed(1));
+      const fairScore = calculateFairScore(duration, survivors.length, totalFighters);
+
+      const teamFighters = simState.fighters
+        .filter(f => isDraw || f.teamIdx === winnerIdx)
+        .sort((a, b) => b.kills - a.kills || (b.alive - a.alive));
+
+      const mvp = teamFighters[0] || survivors[0];
+      const mode = document.getElementById('battle-mode').value;
+      const formatLabel = mode === 'royal' ? 'Batalla Campal' : (mode === 'tournament' ? 'Torneo' : (mode === 'mixed' ? 'Mixto' : 'Duelo'));
+
+      lastBattleSummary = {
+        winner: winName,
+        format: formatLabel,
+        time: duration,
+        survivors: survivors.length,
+        total: totalFighters,
+        mvp: mvp ? mvp.name : 'N/A',
+        mvpId: mvp ? mvp.id : 25,
+        mvpKills: mvp ? mvp.kills : 0,
+        score: fairScore
+      };
+
+      // Solo cuentan para el ranking las partidas decisivas (no empates ni semifinales)
+      if (!isDraw && !(tournamentState.active && tournamentState.round < 2)) saveMatchRecord(lastBattleSummary);
+
+      const nextBtn = document.getElementById('btn-next-round');
+      const banner = document.getElementById('tournament-banner');
+      if (isDraw) {
+        nextBtn.textContent = '🔁 Repetir (empate)';
+      } else if (tournamentState.active) {
+        const winRegionKey = simState.activeRegionKeys[winnerIdx];
+        if (tournamentState.round === 0) {
+          tournamentState.finalists.push(winRegionKey);
+          tournamentState.round = 1;
+          banner.textContent = `🏆 Torneo: Semifinal 2 (${REGIONS[tournamentState.regions[2]].name} vs ${REGIONS[tournamentState.regions[3]].name})`;
+          nextBtn.textContent = '⚔️ Jugar Semifinal 2';
+        } else if (tournamentState.round === 1) {
+          tournamentState.finalists.push(winRegionKey);
+          tournamentState.round = 2;
+          banner.textContent = `👑 Gran Final: ${REGIONS[tournamentState.finalists[0]].name} vs ${REGIONS[tournamentState.finalists[1]].name}`;
+          nextBtn.textContent = '👑 Jugar Gran Final';
+        } else {
+          banner.textContent = `🏆 ¡${winName} se corona Campeón del Torneo!`;
+          tournamentState.round = 0;
+          tournamentState.finalists = [];
+          nextBtn.textContent = '🔄 Nuevo Torneo';
+        }
+      } else {
+        nextBtn.textContent = '⚔️ Revancha Inmediata';
+      }
+
+      document.getElementById('victory-title').textContent = (isDraw ? '🤝 ¡EMPATE!' : `¡${winName.toUpperCase()} GANA LA BATALLA!`);
+      document.getElementById('victory-stats').textContent =
+        `Duración: ${duration}s • Sobrevivientes: ${survivors.length} • Índice Justo: ${fairScore} pts`;
+
+      const showcaseList = teamFighters.slice(0, 10).map((p, idx) => ({
+        ...p,
+        top3Rank: idx < 3 ? idx + 1 : null
+      }));
+      initCarouselDom(showcaseList);
+      renderKillRateChart(duration);
+
+      document.getElementById('victory-overlay').classList.remove('hidden');
+    }
+
+    function renderKillRateChart(durationSec) {
+      const c = document.getElementById('kill-chart-canvas');
+      const cx = c.getContext('2d');
+      c.width = c.parentElement.clientWidth - 24;
+      c.height = 65;
+
+      const bins = 12;
+      const step = Math.max(0.5, durationSec / bins);
+      const counts = new Array(bins).fill(0);
+      for (const t of simState.killTimeline) {
+        const idx = Math.min(bins - 1, Math.floor(t / step));
+        counts[idx]++;
+      }
+
+      const kpm = durationSec > 0 ? Math.round((simState.killTimeline.length / durationSec) * 60) : 0;
+      document.getElementById('kills-per-min-label').textContent = `${kpm} bajas/min`;
+
+      const maxVal = Math.max(1, ...counts);
+      const barW = (c.width / bins) - 6;
+      cx.clearRect(0, 0, c.width, c.height);
+
+      counts.forEach((val, i) => {
+        const h = (val / maxVal) * (c.height - 14);
+        const x = i * (barW + 6) + 3;
+        const y = c.height - h - 4;
+        cx.fillStyle = val === maxVal ? '#ef4444' : '#3b82f6';
+        cx.beginPath();
+        cx.roundRect(x, y, barW, Math.max(3, h), 4);
+        cx.fill();
+      });
+    }
+
+    function shareBattleCard() {
+      if (!lastBattleSummary) return;
+      const off = document.createElement('canvas');
+      off.width = 640;
+      off.height = 340;
+      const octx = off.getContext('2d');
+
+      octx.fillStyle = '#0f172a';
+      octx.fillRect(0, 0, 640, 340);
+      octx.strokeStyle = '#f59e0b';
+      octx.lineWidth = 6;
+      octx.strokeRect(12, 12, 616, 316);
+
+      octx.fillStyle = '#fbbf24';
+      octx.font = '800 16px sans-serif';
+      octx.fillText('BATALLA DE REGIONES POKÉMON • RESULTADO OFICIAL', 36, 54);
+
+      octx.fillStyle = '#ffffff';
+      octx.font = '800 34px sans-serif';
+      octx.fillText(`🏆 ${lastBattleSummary.winner.toUpperCase()}`, 36, 108);
+
+      octx.fillStyle = '#94a3b8';
+      octx.font = '600 18px sans-serif';
+      octx.fillText(`Formato: ${lastBattleSummary.format}  •  Duración: ${lastBattleSummary.time}s`, 36, 152);
+      octx.fillText(`Sobrevivientes: ${lastBattleSummary.survivors}  •  Índice Justo: ${lastBattleSummary.score} pts`, 36, 186);
+
+      octx.fillStyle = '#38bdf8';
+      octx.font = '800 22px sans-serif';
+      octx.fillText(`⭐ MVP: ${lastBattleSummary.mvp} (${lastBattleSummary.mvpKills} KO)`, 36, 245);
+
+      const mvpImg = loadSpriteImage(lastBattleSummary.mvpId);
+      if (mvpImg && mvpImg.complete) {
+        octx.drawImage(mvpImg, 460, 120, 140, 140);
+      }
+
+      const link = document.createElement('a');
+      link.download = `batalla-${lastBattleSummary.winner.toLowerCase()}.png`;
+      link.href = off.toDataURL('image/png');
+      link.click();
+
+      const lbl = document.getElementById('btn-share-label');
+      lbl.textContent = '✅ ¡Imagen Guardada!';
+      setTimeout(() => { lbl.textContent = 'Descargar / Compartir Resultado'; }, 2500);
+    }
+
+    let carouselState = { items: [], currentIndex: 0, timer: null };
+
+    function initCarouselDom(fightersList) {
+      if (carouselState.timer) clearInterval(carouselState.timer);
+      const track = document.getElementById('carousel-track');
+      track.innerHTML = '';
+
+      carouselState.items = fightersList.map((poke) => {
+        const el = document.createElement('div');
+        const medal = poke.top3Rank === 1 ? '🥇 MVP' : (poke.top3Rank === 2 ? '🥈 #2' : (poke.top3Rank === 3 ? '🥉 #3' : `${poke.kills} KO`));
+        const borderClass = poke.top3Rank === 1 ? 'border-amber-400 bg-amber-50/40' : 'border-slate-200 bg-white';
+
+        el.className = `carousel-item w-40 sm:w-44 rounded-2xl border-2 ${borderClass} p-3 text-center flex flex-col items-center justify-between shadow-sm`;
+        el.innerHTML = `
+          <div class="w-full flex items-center justify-between text-[10px] font-extrabold">
+            <span class="text-slate-400">#${String(poke.id).padStart(3, '0')}</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">${medal}</span>
+          </div>
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${poke.id}.png" alt="${poke.name}" class="w-24 h-24 object-contain my-1" />
+          <div class="w-full">
+            <div class="font-display font-extrabold text-xs text-slate-900 truncate">${poke.name}</div>
+            <div class="text-[11px] font-bold text-slate-500 mt-0.5">${poke.kills} eliminaciones</div>
+          </div>
+        `;
+        track.appendChild(el);
+        return { ...poke, element: el, confettiTriggered: false };
+      });
+
+      carouselState.currentIndex = 0;
+      updateCarouselPositions();
+      carouselState.timer = setInterval(() => stepCarousel(1), 2400);
+    }
+
+    function stepCarousel(dir) {
+      const total = carouselState.items.length;
+      if (total === 0) return;
+      carouselState.currentIndex = (carouselState.currentIndex + dir + total) % total;
+      updateCarouselPositions();
+    }
+
+    function updateCarouselPositions() {
+      const total = carouselState.items.length;
+      if (total === 0) return;
+
+      carouselState.items.forEach((item, idx) => {
+        let relOffset = (idx - carouselState.currentIndex + total) % total;
+        if (relOffset > total / 2) relOffset -= total;
+
+        const isCenter = relOffset === 0;
+        const absOffset = Math.abs(relOffset);
+
+        if (absOffset > 2) {
+          item.element.style.opacity = '0';
+          item.element.style.pointerEvents = 'none';
+          return;
+        }
+
+        const translateX = relOffset * 155;
+        const scale = isCenter ? 1.06 : (absOffset === 1 ? 0.82 : 0.65);
+        const opacity = isCenter ? 1 : (absOffset === 1 ? 0.55 : 0.2);
+        const zIndex = isCenter ? 20 : (10 - absOffset);
+
+        item.element.style.transform = `translate(calc(-50% + ${translateX}px), -50%) scale(${scale})`;
+        item.element.style.opacity = opacity;
+        item.element.style.zIndex = zIndex;
+        item.element.style.pointerEvents = isCenter ? 'auto' : 'none';
+
+        if (isCenter && item.top3Rank === 1 && !item.confettiTriggered) {
+          item.confettiTriggered = true;
+          launchConfettiBurst();
+        }
+      });
+    }
+
+    function launchConfettiBurst() {
+      const cCanvas = document.getElementById('confetti-canvas');
+      const cCtx = cCanvas.getContext('2d');
+      cCanvas.width = window.innerWidth;
+      cCanvas.height = window.innerHeight;
+
+      const pieces = Array.from({ length: 70 }, () => ({
+        x: cCanvas.width / 2 + (Math.random() - 0.5) * 180,
+        y: cCanvas.height / 2,
+        vx: (Math.random() - 0.5) * 14,
+        vy: -6 - Math.random() * 10,
+        size: 6 + Math.random() * 6,
+        color: ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'][Math.floor(Math.random() * 5)],
+        rot: Math.random() * 360
+      }));
+
+      let frames = 0;
+      function animConfetti() {
+        frames++;
+        cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+        for (const p of pieces) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.38;
+          p.rot += 6;
+          cCtx.save();
+          cCtx.translate(p.x, p.y);
+          cCtx.rotate((p.rot * Math.PI) / 180);
+          cCtx.fillStyle = p.color;
+          cCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          cCtx.restore();
+        }
+        if (frames < 90) requestAnimationFrame(animConfetti);
+        else cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+      }
+      requestAnimationFrame(animConfetti);
+    }
+
+    /* ==========================================================================
+       11. PERSISTENCIA DE RANKING Y MODALES
+       ========================================================================== */
+    const STORAGE_KEY = 'pokemon_region_battle_ranking_v3';
+
+    function saveMatchRecord(record) {
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      list.push(record);
+      list.sort((a, b) => a.score - b.score);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+    }
+
+    function openRankingModal() {
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const tbody = document.getElementById('ranking-tbody');
+      const empty = document.getElementById('ranking-empty');
+      tbody.innerHTML = '';
+
+      if (list.length === 0) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        list.forEach((row, i) => {
+          const tr = document.createElement('tr');
+          const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `${i + 1}`));
+          tr.className = 'hover:bg-slate-50';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 font-extrabold text-slate-900">${medal}</td>
+            <td class="py-2.5 px-3 font-extrabold text-blue-600">${row.winner}</td>
+            <td class="py-2.5 px-3 text-slate-500">${row.format}</td>
+            <td class="py-2.5 px-3 tabular-nums">${row.time}s</td>
+            <td class="py-2.5 px-3 tabular-nums">${row.survivors}</td>
+            <td class="py-2.5 px-3 text-slate-800">${row.mvp}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-amber-600 tabular-nums">${row.score}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      document.getElementById('ranking-modal').classList.remove('hidden');
+    }
+
+    function closeRankingModal() {
+      document.getElementById('ranking-modal').classList.add('hidden');
+    }
+
+    function clearLeaderboard() {
+      localStorage.removeItem(STORAGE_KEY);
+      openRankingModal();
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('mobile-menu').classList.toggle('hidden');
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('canvas-container');
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(container.clientWidth * DPR);
+      canvas.height = Math.round(container.clientHeight * DPR);
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      if (!simState.running) renderArena();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderRegionPreviews();
+      resizeCanvas();
+      renderArena();
+    });
+  </script>
 </body>
 </html>
